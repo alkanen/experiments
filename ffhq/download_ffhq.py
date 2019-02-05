@@ -34,7 +34,9 @@ PIL.ImageFile.LOAD_TRUNCATED_IMAGES = True
 # ----------------------------------------------------------------------------
 
 json_spec = {
-    "file_url": "https://drive.google.com/uc?id=1IB0BFbN_eRZx9UkJqLHSgJiQhqX-PrI6",
+    "file_url": (
+        "https://drive.google.com/uc?id=1IB0BFbN_eRZx9UkJqLHSgJiQhqX-PrI6"
+    ),
     "file_path": "ffhq-dataset-v1.json",
     "file_size": 266533842,
     "file_md5": "d5dff1aeb0d9e6a8e5b704eb3549b9e1",
@@ -42,55 +44,82 @@ json_spec = {
 
 tfrecords_specs = [
     {
-        "file_url": "https://drive.google.com/uc?id=1LnhoytWihRRJ7CfhLQ76F8YxwxRDlZN3",
+        "file_url": (
+            "https://drive.google.com/uc?"
+            "id=1LnhoytWihRRJ7CfhLQ76F8YxwxRDlZN3"
+        ),
         "file_path": "tfrecords/ffhq/ffhq-r02.tfrecords",
         "file_size": 6860000,
         "file_md5": "63e062160f1ef9079d4f51206a95ba39",
     },
     {
-        "file_url": "https://drive.google.com/uc?id=1LWeKZGZ_x2rNlTenqsaTk8s7Cpadzjbh",
+        "file_url": (
+            "https://drive.google.com/uc?"
+            "id=1LWeKZGZ_x2rNlTenqsaTk8s7Cpadzjbh"
+        ),
         "file_path": "tfrecords/ffhq/ffhq-r03.tfrecords",
         "file_size": 17290000,
         "file_md5": "54fb32a11ebaf1b86807cc0446dd4ec5",
     },
     {
-        "file_url": "https://drive.google.com/uc?id=1Lr7Tiufr1Za85HQ18yg3XnJXstiI2BAC",
+        "file_url": (
+            "https://drive.google.com/uc?"
+            "id=1Lr7Tiufr1Za85HQ18yg3XnJXstiI2BAC"
+        ),
         "file_path": "tfrecords/ffhq/ffhq-r04.tfrecords",
         "file_size": 57610000,
         "file_md5": "7164cc5531f6828bf9c578bdc3320e49",
     },
     {
-        "file_url": "https://drive.google.com/uc?id=1LnyiayZ-XJFtatxGFgYePcs9bdxuIJO_",
+        "file_url": (
+            "https://drive.google.com/uc?"
+            "id=1LnyiayZ-XJFtatxGFgYePcs9bdxuIJO_"
+        ),
         "file_path": "tfrecords/ffhq/ffhq-r05.tfrecords",
         "file_size": 218890000,
         "file_md5": "050cc7e5fd07a1508eaa2558dafbd9ed",
     },
     {
-        "file_url": "https://drive.google.com/uc?id=1Lt6UP201zHnpH8zLNcKyCIkbC-aMb5V_",
+        "file_url": (
+            "https://drive.google.com/uc?"
+            "id=1Lt6UP201zHnpH8zLNcKyCIkbC-aMb5V_"
+        ),
         "file_path": "tfrecords/ffhq/ffhq-r06.tfrecords",
         "file_size": 864010000,
         "file_md5": "90bedc9cc07007cd66615b2b1255aab8",
     },
     {
-        "file_url": "https://drive.google.com/uc?id=1LwOP25fJ4xN56YpNCKJZM-3mSMauTxeb",
+        "file_url": (
+            "https://drive.google.com/uc?"
+            "id=1LwOP25fJ4xN56YpNCKJZM-3mSMauTxeb"
+        ),
         "file_path": "tfrecords/ffhq/ffhq-r07.tfrecords",
         "file_size": 3444980000,
         "file_md5": "bff839e0dda771732495541b1aff7047",
     },
     {
-        "file_url": "https://drive.google.com/uc?id=1LxxgVBHWgyN8jzf8bQssgVOrTLE8Gv2v",
+        "file_url": (
+            "https://drive.google.com/uc?"
+            "id=1LxxgVBHWgyN8jzf8bQssgVOrTLE8Gv2v"
+        ),
         "file_path": "tfrecords/ffhq/ffhq-r08.tfrecords",
         "file_size": 13766900000,
         "file_md5": "74de4f07dc7bfb07c0ad4471fdac5e67",
     },
     {
-        "file_url": "https://drive.google.com/uc?id=1M-ulhD5h-J7sqSy5Y1njUY_80LPcrv3V",
+        "file_url": (
+            "https://drive.google.com/uc?"
+            "id=1M-ulhD5h-J7sqSy5Y1njUY_80LPcrv3V"
+        ),
         "file_path": "tfrecords/ffhq/ffhq-r09.tfrecords",
         "file_size": 55054580000,
         "file_md5": "05355aa457a4bd72709f74a81841b46d",
     },
     {
-        "file_url": "https://drive.google.com/uc?id=1M11BIdIpFCiapUqV658biPlaXsTRvYfM",
+        "file_url": (
+            "https://drive.google.com/uc?"
+            "id=1M11BIdIpFCiapUqV658biPlaXsTRvYfM"
+        ),
         "file_path": "tfrecords/ffhq/ffhq-r10.tfrecords",
         "file_size": 220205650000,
         "file_md5": "bf43cab9609ab2a27892fb6c2415c11b",
@@ -99,31 +128,46 @@ tfrecords_specs = [
 
 license_specs = {
     "json": {
-        "file_url": "https://drive.google.com/uc?id=1SHafCugkpMZzYhbgOz0zCuYiy-hb9lYX",
+        "file_url": (
+            "https://drive.google.com/uc?"
+            "id=1SHafCugkpMZzYhbgOz0zCuYiy-hb9lYX"
+        ),
         "file_path": "LICENSE.txt",
         "file_size": 1610,
         "file_md5": "724f3831aaecd61a84fe98500079abc2",
     },
     "images": {
-        "file_url": "https://drive.google.com/uc?id=1SRxl2GS8CFcqMnD0R-YYibDqHJeczh9R",
+        "file_url": (
+            "https://drive.google.com/uc?"
+            "id=1SRxl2GS8CFcqMnD0R-YYibDqHJeczh9R"
+        ),
         "file_path": "images1024x1024/LICENSE.txt",
         "file_size": 1610,
         "file_md5": "724f3831aaecd61a84fe98500079abc2",
     },
     "thumbs": {
-        "file_url": "https://drive.google.com/uc?id=1SZVzeMgo4dcHZVBauUH2mXU4Z8P-8ddk",
+        "file_url": (
+            "https://drive.google.com/uc?"
+            "id=1SZVzeMgo4dcHZVBauUH2mXU4Z8P-8ddk"
+        ),
         "file_path": "thumbnails128x128/LICENSE.txt",
         " file_size": 1610,
         "file_md5": "724f3831aaecd61a84fe98500079abc2",
     },
     "wilds": {
-        "file_url": "https://drive.google.com/uc?id=1SSHZccNcWoywzXO5Ijwj69PU5Gp5F_tm",
+        "file_url": (
+            "https://drive.google.com/uc?"
+            "id=1SSHZccNcWoywzXO5Ijwj69PU5Gp5F_tm"
+        ),
         "file_path": "in-the-wild-images/LICENSE.txt",
         "file_size": 1610,
         "file_md5": "724f3831aaecd61a84fe98500079abc2",
     },
     "tfrecords": {
-        "file_url": "https://drive.google.com/uc?id=1SYUmqKdLoTYq-kqsnPsniLScMhspvl5v",
+        "file_url": (
+            "https://drive.google.com/uc?"
+            "id=1SYUmqKdLoTYq-kqsnPsniLScMhspvl5v"
+        ),
         "file_path": "tfrecords/ffhq/LICENSE.txt",
         "file_size": 1610,
         "file_md5": "724f3831aaecd61a84fe98500079abc2",
@@ -228,8 +272,6 @@ def choose_bytes_unit(num_bytes):
 
 
 # ----------------------------------------------------------------------------
-
-
 def format_time(seconds):
     s = int(np.rint(seconds))
     if s < 60:
@@ -244,11 +286,25 @@ def format_time(seconds):
 
 
 # ----------------------------------------------------------------------------
-
-
 def download_files(
-    file_specs, num_threads=32, status_delay=0.2, timing_window=50, **download_kwargs
+    file_specs,
+    num_threads=32,
+    status_delay=0.2,
+    timing_window=50,
+    **download_kwargs
 ):
+    # Cleanup
+    broken = []
+    for i, spec in enumerate(file_specs):
+        if "file_size" not in spec:
+            if " file_size" in spec:
+                spec["file_size"] = spec[" file_size"]
+            else:
+                print("No file_size: %s" % spec)
+                broken.append(i)
+    # Delete any broken entries, starting from the back to keep index integrity
+    for i in reversed(broken):
+        del file_specs[i]
 
     # Determine which files to download.
     done_specs = {
@@ -256,9 +312,15 @@ def download_files(
         for spec in file_specs
         if os.path.isfile(spec["file_path"])
     }
-    missing_specs = [spec for spec in file_specs if spec["file_path"] not in done_specs]
+    missing_specs = [
+        spec for spec in file_specs if spec["file_path"] not in done_specs
+    ]
     files_total = len(file_specs)
-    bytes_total = sum(spec["file_size"] for spec in file_specs)
+    try:
+        bytes_total = sum(spec["file_size"] for spec in file_specs)
+    except KeyError as ke:
+        raise ke
+
     stats = dict(
         files_done=len(done_specs),
         bytes_done=sum(spec["file_size"] for spec in done_specs.values()),
@@ -297,7 +359,9 @@ def download_files(
             (time.clock(), bytes_done)
         ]
         bandwidth = max(
-            (timing[-1][1] - timing[0][1]) / max(timing[-1][0] - timing[0][0], 1e-8), 0
+            (timing[-1][1] - timing[0][1])
+            / max(timing[-1][0] - timing[0][0], 1e-8),
+            0,
         )
         bandwidth_unit, bandwidth_div = choose_bytes_unit(bandwidth)
         eta = format_time((bytes_total - bytes_done) / max(bandwidth, 1))
@@ -401,7 +465,8 @@ def print_statistics(json_data):
     for row in rows:
         print(
             "  ".join(
-                cell + " " * (width - len(cell)) for cell, width in zip(row, widths)
+                cell + " " * (width - len(cell))
+                for cell, width in zip(row, widths)
             )
         )
 
@@ -459,7 +524,10 @@ def recreate_aligned_images(
         # Load in-the-wild image.
         src_file = item["in_the_wild"]["file_path"]
         if not os.path.isfile(src_file):
-            print('\nCannot find source image. Please run "--wilds" before "--align".')
+            print(
+                '\nCannot find source image. Please run "--wilds" '
+                'before "--align".'
+            )
             return
         img = PIL.Image.open(src_file)
 
@@ -508,22 +576,30 @@ def recreate_aligned_images(
         if enable_padding and max(pad) > border - 4:
             pad = np.maximum(pad, int(np.rint(qsize * 0.3)))
             img = np.pad(
-                np.float32(img), ((pad[1], pad[3]), (pad[0], pad[2]), (0, 0)), "reflect"
+                np.float32(img),
+                ((pad[1], pad[3]), (pad[0], pad[2]), (0, 0)),
+                "reflect",
             )
             h, w, _ = img.shape
             y, x, _ = np.ogrid[:h, :w, :1]
             mask = np.maximum(
                 1.0
-                - np.minimum(np.float32(x) / pad[0], np.float32(w - 1 - x) / pad[2]),
+                - np.minimum(
+                    np.float32(x) / pad[0], np.float32(w - 1 - x) / pad[2]
+                ),
                 1.0
-                - np.minimum(np.float32(y) / pad[1], np.float32(h - 1 - y) / pad[3]),
+                - np.minimum(
+                    np.float32(y) / pad[1], np.float32(h - 1 - y) / pad[3]
+                ),
             )
             blur = qsize * 0.02
             img += (
                 scipy.ndimage.gaussian_filter(img, [blur, blur, 0]) - img
             ) * np.clip(mask * 3.0 + 1.0, 0.0, 1.0)
             img += (np.median(img, axis=(0, 1)) - img) * np.clip(mask, 0.0, 1.0)
-            img = PIL.Image.fromarray(np.uint8(np.clip(np.rint(img), 0, 255)), "RGB")
+            img = PIL.Image.fromarray(
+                np.uint8(np.clip(np.rint(img), 0, 255)), "RGB"
+            )
             quad += pad[:2]
 
         # Transform.
@@ -548,7 +624,9 @@ def recreate_aligned_images(
 
 
 def run(tasks, **download_kwargs):
-    if not os.path.isfile(json_spec["file_path"]) or not os.path.isfile("LICENSE.txt"):
+    if not os.path.isfile(json_spec["file_path"]) or not os.path.isfile(
+        "LICENSE.txt"
+    ):
         print("Downloading JSON metadata...")
         download_files([json_spec, license_specs["json"]], **download_kwargs)
 
@@ -590,7 +668,10 @@ def run(tasks, **download_kwargs):
 def run_cmdline(argv):
     parser = argparse.ArgumentParser(
         prog=argv[0],
-        description="Download Flickr-Face-HQ (FFHQ) dataset to current working directory.",
+        description=(
+            "Download Flickr-Face-HQ (FFHQ) dataset to current working "
+            "directory."
+        ),
     )
     parser.add_argument(
         "-j",
