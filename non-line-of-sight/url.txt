@@ -1,0 +1,8 @@
+Article:
+https://www.analytech-solutions.com/analytech-solutions/blog/nlos.html
+
+Source code:
+https://github.com/analytech-solutions/fkMigration.jl
+
+Stanford Computational Imaging Lab data set:
+https://drive.google.com/file/d/1_av9TdJ-J22qAUNs1ueZ8ETuRRW2KHg_/view
