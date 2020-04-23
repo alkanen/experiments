@@ -200,7 +200,11 @@ def load_calib(folder):
 
 
 def main():
-    datafolder = "./statue/"
+    to_video = False
+    time = 512
+    max_dimension = 256
+    dataset = "statue"
+    datafolder = "./%s/" % dataset
 
     data = load_data(datafolder, "meas_180min.mat")
     delays = load_calib(datafolder)
@@ -221,7 +225,7 @@ def main():
     data = None
 
     print("Resample input data")
-    tau = downsample_and_crop(tau, 256, 512)
+    tau = downsample_and_crop(tau, max_dimension, time)
     T, h, w = tau.shape
 
     # Convert intensity data to amplitude, pad to double size with
@@ -234,15 +238,27 @@ def main():
     phi_bar = None
 
     tau_new = unperform_fft(phi, (T, h, w))
+    phi = None
 
     print("Deal with NaNs")
     np.nan_to_num(tau_new, copy=False, posinf=255)
 
-    print("Save image")
-    plane = np.max(tau_new, axis=0) / np.max(tau_new)
-    plane = np.rot90(plane, 3)
-    im = Image.fromarray((np.fliplr(plane) * 255).astype(np.uint8))
-    im.convert("L").save("images/test.png")
+    if to_video:
+        print("Save video frames")
+        scale = 255. / np.max(tau_new)
+        for i, plane in tqdm(enumerate(tau_new)):
+            plane = np.rot90(plane, 3)
+            im = Image.fromarray((np.fliplr(plane) * scale).astype(np.uint8))
+            im.convert("L").save("images/frame_%05d.png" % i)
+
+    else:
+        print("Save image")
+        plane = np.max(tau_new, axis=0) / np.max(tau_new)
+        plane = np.rot90(plane, 3)
+        im = Image.fromarray((np.fliplr(plane) * 255).astype(np.uint8))
+        im.convert("L").save(
+            "images/%s_nlos_%d_%d.png" % (dataset, max_dimension, time)
+        )
 
 
 if __name__ == "__main__":
