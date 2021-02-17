@@ -37,27 +37,38 @@ int main(void)
 {
   // Image geometry
   const auto aspect_ratio = 16.0 / 9.0;
-  const int width = 400;
+  const int width = 1920;
   const int height = static_cast<int>(width / aspect_ratio);
   const int samples_per_pixel = 100;
-  const int max_depth = 50;
+  const int max_depth = 25;
 
   // World
+  auto R = cos(pi / 4);
   HittableList world;
 
   auto material_ground = make_shared<Lambertian>(Color(0.8, 0.8, 0.0));
   auto material_center = make_shared<Lambertian>(Color(0.1, 0.2, 0.5));
   auto material_left   = make_shared<Dielectric>(1.5);
-  auto material_right  = make_shared<Metal>(Color(0.8, 0.6, 0.2), 1.0);
+  auto material_inner   = make_shared<Dielectric>(2.5);
+  auto material_right  = make_shared<Metal>(Color(0.8, 0.6, 0.2), 0.0);
 
   world.add(make_shared<Sphere>(Point3( 0.0, -100.5, -1.0), 100.0, material_ground));
   world.add(make_shared<Sphere>(Point3( 0.0,    0.0, -1.0),   0.5, material_center));
   world.add(make_shared<Sphere>(Point3(-1.0,    0.0, -1.0),   0.5, material_left));
-  world.add(make_shared<Sphere>(Point3(-1.0,    0.0, -1.0),  -0.4, material_left));
+  world.add(make_shared<Sphere>(Point3(-1.0,    0.0, -1.0), -0.45, material_left));
+  world.add(make_shared<Sphere>(Point3(-1.0,    0.0, -1.0),  0.45, material_inner));
+  world.add(make_shared<Sphere>(Point3(-1.0,    0.0, -1.0), -0.40, material_inner));
   world.add(make_shared<Sphere>(Point3( 1.0,    0.0, -1.0),   0.5, material_right));
 
   // Camera
-  Camera cam;
+  auto look_from = Point3(-2, 2, 1);
+  auto look_at = Point3(0, 0, -1);
+  auto vup = Vec3(0, 1, 0);
+  auto fov = 20.0;
+  auto dist_to_focus = (look_at - look_from).length();
+  auto aperture = 2.0;
+
+  Camera cam(look_from, look_at, vup, fov, aspect_ratio, aperture, dist_to_focus);
 
   // Render
   std::cerr << "Begin" << std::endl;
