@@ -44,5 +44,6 @@ inline double clamp(double x, double min, double max) {
 
 #include "ray.hpp"
 #include "vec3.hpp"
+#include "color.hpp"
 
 #endif

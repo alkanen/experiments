@@ -55,6 +55,12 @@ public:
     return Vec3(random_double(min,max), random_double(min,max), random_double(min,max));
   }
 
+  bool near_zero() const {
+    // Return true if the vector is close to zero in all dimensions.
+    const auto s = 1e-8;
+    return (fabs(e[0]) < s) && (fabs(e[1]) < s) && (fabs(e[2]) < s);
+  }
+
 public:
   double e[3];
 };
@@ -64,35 +70,43 @@ using Point3 = Vec3;   // 3D point
 
 // Vec3 Utility Functions
 
-inline std::ostream& operator<<(std::ostream &out, const Vec3 &v) {
+inline std::ostream& operator<<(std::ostream &out, const Vec3 &v)
+{
   return out << v.e[0] << ' ' << v.e[1] << ' ' << v.e[2];
 }
 
-inline Vec3 operator+(const Vec3 &u, const Vec3 &v) {
+inline Vec3 operator+(const Vec3 &u, const Vec3 &v)
+{
   return Vec3(u.e[0] + v.e[0], u.e[1] + v.e[1], u.e[2] + v.e[2]);
 }
 
-inline Vec3 operator-(const Vec3 &u, const Vec3 &v) {
+inline Vec3 operator-(const Vec3 &u, const Vec3 &v)
+{
   return Vec3(u.e[0] - v.e[0], u.e[1] - v.e[1], u.e[2] - v.e[2]);
 }
 
-inline Vec3 operator*(const Vec3 &u, const Vec3 &v) {
+inline Vec3 operator*(const Vec3 &u, const Vec3 &v)
+{
   return Vec3(u.e[0] * v.e[0], u.e[1] * v.e[1], u.e[2] * v.e[2]);
 }
 
-inline Vec3 operator*(double t, const Vec3 &v) {
+inline Vec3 operator*(double t, const Vec3 &v)
+{
   return Vec3(t*v.e[0], t*v.e[1], t*v.e[2]);
 }
 
-inline Vec3 operator*(const Vec3 &v, double t) {
+inline Vec3 operator*(const Vec3 &v, double t)
+{
   return t * v;
 }
 
-inline Vec3 operator/(Vec3 v, double t) {
+inline Vec3 operator/(Vec3 v, double t)
+{
   return (1/t) * v;
 }
 
-inline double dot(const Vec3 &u, const Vec3 &v) {
+inline double dot(const Vec3 &u, const Vec3 &v)
+{
   return (
     u.e[0] * v.e[0]
     + u.e[1] * v.e[1]
@@ -100,7 +114,8 @@ inline double dot(const Vec3 &u, const Vec3 &v) {
   );
 }
 
-inline Vec3 cross(const Vec3 &u, const Vec3 &v) {
+inline Vec3 cross(const Vec3 &u, const Vec3 &v)
+{
   return Vec3(
     u.e[1] * v.e[2] - u.e[2] * v.e[1],
     u.e[2] * v.e[0] - u.e[0] * v.e[2],
@@ -108,11 +123,13 @@ inline Vec3 cross(const Vec3 &u, const Vec3 &v) {
   );
 }
 
-inline Vec3 unit_vector(Vec3 v) {
+inline Vec3 unit_vector(Vec3 v)
+{
   return v / v.length();
 }
 
-Vec3 random_in_unit_sphere() {
+Vec3 random_in_unit_sphere()
+{
   while(true) {
     auto p = Vec3::random(-1, 1);
     if(p.length_squared() >= 1)
@@ -122,16 +139,23 @@ Vec3 random_in_unit_sphere() {
   }
 }
 
-Vec3 random_unit_vector() {
+Vec3 random_unit_vector()
+{
   return unit_vector(random_in_unit_sphere());
 }
 
-Vec3 random_in_hemisphere(const Vec3& normal) {
+Vec3 random_in_hemisphere(const Vec3& normal)
+{
   Vec3 in_unit_sphere = random_in_unit_sphere();
   if(dot(in_unit_sphere, normal) > 0.0) // In the same hemisphere as the normal
     return in_unit_sphere;
   else
     return -in_unit_sphere;
+}
+
+Vec3 reflect(const Vec3& v, const Vec3& n)
+{
+  return v - 2*dot(v, n) * n;
 }
 
 #endif

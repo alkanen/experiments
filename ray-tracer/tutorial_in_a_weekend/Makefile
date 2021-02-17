@@ -1,5 +1,16 @@
 CCFLAGS+=-g -Wall -I.
 LDFLAGS+=-lm
+HEADERS=camera.hpp \
+        color.hpp \
+        hittable.hpp \
+        hittable_list.hpp \
+        material.hpp \
+        ray.hpp \
+        rtweekend.hpp \
+        sphere.hpp \
+        tqdm.hpp \
+        tqdm_utils.hpp \
+        vec3.hpp
 
 .PHONY: all
 all: test.ppm
@@ -12,7 +23,7 @@ raytracer: main.o
 	echo "[LD] $@"
 	g++ ${CCFLAGS} $^ -o $@ ${LDFLAGS}
 
-main.o: main.cpp vec3.hpp hittable_list.hpp hittable.hpp rtweekend.hpp sphere.hpp color.hpp ray.hpp tqdm.hpp tqdm_utils.hpp
+main.o: main.cpp $(HEADERS)
 	echo "[CC] $@"
 	g++ ${CCFLAGS} $< -o $@ -c
 
