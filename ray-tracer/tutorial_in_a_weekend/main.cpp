@@ -12,11 +12,17 @@
 
 #include <iostream>
 
-Color ray_color(const Ray &r, const Hittable &world)
+Color ray_color(const Ray &r, const Hittable &world, int depth)
 {
   HitRecord rec;
-  if(world.hit(r, 0, infinity, rec)) {
-    return 0.5 * (rec.normal + Color(1, 1, 1));
+
+  if(depth <= 0)
+    return Color(0, 0, 0);
+
+  if(world.hit(r, 0.001, infinity, rec)) {
+    Point3 target = rec.p + rec.normal + random_unit_vector();
+    // Point3 target = rec.p + random_in_hemisphere(rec.normal);
+    return 0.5 * ray_color(Ray(rec.p, target - rec.p), world, depth-1);
   }
   Vec3 unit_direction = unit_vector(r.direction());
   auto t = 0.5 * (unit_direction.y() + 1.0);
@@ -27,9 +33,10 @@ int main(void)
 {
   // Image geometry
   const auto aspect_ratio = 16.0 / 9.0;
-  const int width = 800;
+  const int width = 400;
   const int height = static_cast<int>(width / aspect_ratio);
   const int samples_per_pixel = 100;
+  const int max_depth = 50;
 
   // World
   HittableList world;
@@ -53,7 +60,7 @@ int main(void)
         auto v = (j + random_double()) / (height - 1);
 
         Ray r = cam.get_ray(u, v);
-        pixel_color += ray_color(r, world);
+        pixel_color += ray_color(r, world, max_depth);
       }
 
       write_color(std::cout, pixel_color, samples_per_pixel);
