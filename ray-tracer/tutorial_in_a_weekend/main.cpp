@@ -8,6 +8,7 @@
 #include <vector>
 #include <random>
 #include <iostream>
+#include <mutex>
 
 // #include "tqdm.hpp"
 
@@ -44,7 +45,7 @@ int main(void)
   const auto aspect_ratio = 16.0 / 9.0;
   const int width = 1920;
   const int height = static_cast<int>(width / aspect_ratio);
-  const int samples_per_pixel = 1000;
+  const int samples_per_pixel = 10000;
   const int max_depth = 25;
 
   // World
@@ -53,7 +54,7 @@ int main(void)
   auto material_ground = make_shared<Lambertian>(Color(0.8, 0.8, 0.0));
   auto material_center = make_shared<Lambertian>(Color(0.1, 0.2, 0.5));
   auto material_left   = make_shared<Dielectric>(1.5);
-  auto material_inner   = make_shared<Dielectric>(2.5);
+  auto material_inner  = make_shared<Dielectric>(2.5);
   auto material_right  = make_shared<Metal>(Color(0.8, 0.6, 0.2), 0.0);
 
   world.add(make_shared<Sphere>(Point3( 0.0, -100.5, -1.0), 100.0, material_ground));
@@ -74,10 +75,6 @@ int main(void)
 
   Camera cam(look_from, look_at, vup, fov, aspect_ratio, aperture, dist_to_focus);
 
-  // Render
-  std::cerr << "Begin" << std::endl;
-  //for(auto inv_j : tqdm::range(height)) {
-
   // Image data
   std::vector<double> data(3 * height * width);
   std::vector<int> scanlines;
@@ -85,7 +82,10 @@ int main(void)
     scanlines.push_back(i);
   }
 
-  //for(int j = 0; j < height; j++) {
+  // Render
+  std::cerr << "Begin" << std::endl;
+  auto line_count = 0;
+  std::mutex mutex;
   for_each(
     std::execution::par_unseq,
     scanlines.begin(),
@@ -94,10 +94,10 @@ int main(void)
      &data,
      &cam,
      &world,
-     &max_depth
+     &max_depth,
+     &line_count,
+     &mutex
     ] (auto &&j) {
-      std::cerr << "\rScanlines remaining: " << j << ' ' << std::flush;
-      // auto j = height - 1 - inv_j;
       for (int i = 0; i < width; ++i) {
         Color pixel_color(0, 0, 0);
         for(int s = 0; s < samples_per_pixel; s++) {
@@ -112,10 +112,17 @@ int main(void)
         data[(height - j - 1) * width * 3 + i * 3 + 1] = pixel_color.y();
         data[(height - j - 1) * width * 3 + i * 3 + 2] = pixel_color.z();
       }
+
+      {
+        const std::lock_guard<std::mutex> lock(mutex);
+        ++line_count;
+        std::cerr << "\rScanline " << line_count << "/" << height << std::flush;
+      }
     }
   );
   std::cerr << "\nRender complete." << std::endl;
 
+  // Dump PPM file
   std::cout << "P3\n" << width << ' ' << height << "\n255\n";
   for(auto raw : data) {
     auto col = static_cast<int>(256 * clamp(sqrt(raw / samples_per_pixel), 0.0, 0.999));
