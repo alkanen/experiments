@@ -3,7 +3,7 @@
 #include "ppm.hpp"
 
 
-bool saveImage(const double **data, const int width, const int height)
+bool saveImage(const std::array<double> &data, const int width, const int height)
 {
   (void)data;
 

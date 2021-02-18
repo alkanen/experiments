@@ -2,6 +2,13 @@
 // https://raytracing.github.io/books/RayTracingInOneWeekend.html
 
 #include <cstdlib>
+#include <algorithm>
+#include <execution>
+#include <array>
+#include <vector>
+#include <random>
+#include <iostream>
+
 // #include "tqdm.hpp"
 
 #include "rtweekend.hpp"
@@ -10,8 +17,6 @@
 #include "sphere.hpp"
 #include "camera.hpp"
 #include "material.hpp"
-
-#include <iostream>
 
 Color ray_color(const Ray &r, const Hittable &world, int depth)
 {
@@ -39,11 +44,10 @@ int main(void)
   const auto aspect_ratio = 16.0 / 9.0;
   const int width = 1920;
   const int height = static_cast<int>(width / aspect_ratio);
-  const int samples_per_pixel = 100;
+  const int samples_per_pixel = 1000;
   const int max_depth = 25;
 
   // World
-  auto R = cos(pi / 4);
   HittableList world;
 
   auto material_ground = make_shared<Lambertian>(Color(0.8, 0.8, 0.0));
@@ -56,40 +60,68 @@ int main(void)
   world.add(make_shared<Sphere>(Point3( 0.0,    0.0, -1.0),   0.5, material_center));
   world.add(make_shared<Sphere>(Point3(-1.0,    0.0, -1.0),   0.5, material_left));
   world.add(make_shared<Sphere>(Point3(-1.0,    0.0, -1.0), -0.45, material_left));
-  world.add(make_shared<Sphere>(Point3(-1.0,    0.0, -1.0),  0.45, material_inner));
-  world.add(make_shared<Sphere>(Point3(-1.0,    0.0, -1.0), -0.40, material_inner));
+  //world.add(make_shared<Sphere>(Point3(-1.0,    0.0, -1.0),  0.45, material_inner));
+  //world.add(make_shared<Sphere>(Point3(-1.0,    0.0, -1.0), -0.40, material_inner));
   world.add(make_shared<Sphere>(Point3( 1.0,    0.0, -1.0),   0.5, material_right));
 
   // Camera
   auto look_from = Point3(-2, 2, 1);
   auto look_at = Point3(0, 0, -1);
   auto vup = Vec3(0, 1, 0);
-  auto fov = 20.0;
+  auto fov = 90.0;
   auto dist_to_focus = (look_at - look_from).length();
-  auto aperture = 2.0;
+  auto aperture = .20;
 
   Camera cam(look_from, look_at, vup, fov, aspect_ratio, aperture, dist_to_focus);
 
   // Render
   std::cerr << "Begin" << std::endl;
-  std::cout << "P3\n" << width << ' ' << height << "\n255\n";
   //for(auto inv_j : tqdm::range(height)) {
-  for(int j = height - 1; j >= 0; j--) {
-    std::cerr << "\rScanlines remaining: " << j << ' ' << std::flush;
-    // auto j = height - 1 - inv_j;
-    for (int i = 0; i < width; ++i) {
-      Color pixel_color(0, 0, 0);
-      for(int s = 0; s < samples_per_pixel; s++) {
-        auto u = (i + random_double()) / (width - 1);
-        auto v = (j + random_double()) / (height - 1);
 
-        Ray r = cam.get_ray(u, v);
-        pixel_color += ray_color(r, world, max_depth);
-      }
-
-      write_color(std::cout, pixel_color, samples_per_pixel);
-    }
+  // Image data
+  std::vector<double> data(3 * height * width);
+  std::vector<int> scanlines;
+  for(int i = 0; i < height; ++i) {
+    scanlines.push_back(i);
   }
+
+  //for(int j = 0; j < height; j++) {
+  for_each(
+    std::execution::par_unseq,
+    scanlines.begin(),
+    scanlines.end(),
+    [
+     &data,
+     &cam,
+     &world,
+     &max_depth
+    ] (auto &&j) {
+      std::cerr << "\rScanlines remaining: " << j << ' ' << std::flush;
+      // auto j = height - 1 - inv_j;
+      for (int i = 0; i < width; ++i) {
+        Color pixel_color(0, 0, 0);
+        for(int s = 0; s < samples_per_pixel; s++) {
+          auto u = (i + random_double()) / (width - 1);
+          auto v = (j + random_double()) / (height - 1);
+
+          Ray r = cam.get_ray(u, v);
+          pixel_color += ray_color(r, world, max_depth);
+        }
+
+        data[(height - j - 1) * width * 3 + i * 3 + 0] = pixel_color.x();
+        data[(height - j - 1) * width * 3 + i * 3 + 1] = pixel_color.y();
+        data[(height - j - 1) * width * 3 + i * 3 + 2] = pixel_color.z();
+      }
+    }
+  );
+  std::cerr << "\nRender complete." << std::endl;
+
+  std::cout << "P3\n" << width << ' ' << height << "\n255\n";
+  for(auto raw : data) {
+    auto col = static_cast<int>(256 * clamp(sqrt(raw / samples_per_pixel), 0.0, 0.999));
+    std::cout << col << " ";
+  }
+
   std::cerr << "\nDone." << std::endl;
 
   return 0;

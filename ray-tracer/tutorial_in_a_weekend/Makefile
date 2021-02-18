@@ -1,4 +1,5 @@
-CCFLAGS+=-g -Wall -I.
+CC=g++-10
+CCFLAGS+=-std=c++17 -Wall -O3 -I.
 LDFLAGS+=-lm
 HEADERS=camera.hpp \
         color.hpp \
@@ -17,19 +18,23 @@ all: test.ppm
 	ffmpeg -y -i test.ppm /disk1/www/raytracer/test.png
 
 test.ppm: raytracer
-	./raytracer > $@
+	echo ""
+	time ./raytracer > $@
+	echo ""
+	echo ""
+	echo ""
 
 raytracer: main.o
 	echo "[LD] $@"
-	g++ ${CCFLAGS} $^ -o $@ ${LDFLAGS}
+	${CC} ${CCFLAGS} $^ -o $@ ${LDFLAGS}
 
 main.o: main.cpp $(HEADERS)
 	echo "[CC] $@"
-	g++ ${CCFLAGS} $< -o $@ -c
+	${CC} ${CCFLAGS} $< -o $@ -c
 
 ppm.o: ppm.cpp ppm.hpp
 	echo "[CC] $@"
-	g++ ${CCFLAGS} $< -o $@ -c
+	${CC} ${CCFLAGS} $< -o $@ -c
 
 .SILENT:
 
