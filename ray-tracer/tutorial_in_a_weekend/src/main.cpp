@@ -10,12 +10,36 @@
 #include <iostream>
 #include <mutex>
 
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image.h"
+#include "stb_image_write.h"
+
 #include "rtweekend.hpp"
 #include "color.hpp"
 #include "hittable_list.hpp"
 #include "sphere.hpp"
 #include "camera.hpp"
 #include "material.hpp"
+
+void save_png(std::vector<double> &data, const int width, const int height, const char *filename)
+{
+  int y, x;
+  uint8_t *pixels;
+  const int pitch = width * 3;
+  // Change from RGB to BGR because PNG sucks.
+  pixels = new uint8_t[data.size()];
+  for(y=0; y<height; y++) {
+    for(x=0; x<pitch-3; x+=3) {
+      pixels[y * pitch + x + 0] = static_cast<int>(256 * clamp(sqrt(data[y * pitch + x + 0]), 0.0, 0.999));;
+      pixels[y * pitch + x + 1] = static_cast<int>(256 * clamp(sqrt(data[y * pitch + x + 1]), 0.0, 0.999));;
+      pixels[y * pitch + x + 2] = static_cast<int>(256 * clamp(sqrt(data[y * pitch + x + 2]), 0.0, 0.999));;
+    }
+  }
+
+  stbi_write_png( filename, width, height, STBI_rgb, pixels, width*3 );
+  delete[] pixels;
+}
+
 
 Color ray_color(const Ray &r, const Hittable &world, int depth)
 {
@@ -37,16 +61,22 @@ Color ray_color(const Ray &r, const Hittable &world, int depth)
   return (1.0 - t) * Color(1.0, 1.0, 1.0) + t * Color(0.5, 0.7, 1.0);
 }
 
-int main(void)
+int main(int argc, char *argv[])
 {
+  char *filename;
+  if(argc >= 2) {
+    filename = argv[1];
+  } else {
+    filename = "test.png";
+  }
   // Image properties
   const auto aspect_ratio = 16.0 / 9.0;
-  const int width = 1920;
+  const int width = 1920*2;
   const int height = static_cast<int>(width / aspect_ratio);
   const int min_samples_per_pixel = 10;
   const int max_samples_per_pixel = 10000000;
   const int max_depth = 25;
-  const double pincer_limit = 0.0005;
+  const double pincer_limit = 0.00001;
 
   // World
   HittableList world;
@@ -157,6 +187,7 @@ int main(void)
   std::cerr << "Average " << ((double)sample_count / (width * height)) << " samples per pixel" << std::endl;
 
   // Dump PPM file
+  /*
   FILE *fp = fopen("test.ppm", "w");
   fprintf(fp, "P3\n%d %d\n255\n", width, height);
   for(auto raw : data) {
@@ -164,6 +195,9 @@ int main(void)
     fprintf(fp, "%d ", col);
   }
   fclose(fp);
+  */
+  std::cerr << "Saving image to '" << filename << "'" << std::endl;
+  save_png(data, width, height, filename);
 
   std::cerr << "\nDone." << std::endl;
 

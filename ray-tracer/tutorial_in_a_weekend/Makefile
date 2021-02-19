@@ -12,12 +12,12 @@ HEADERS=src/camera.hpp \
         src/vec3.hpp
 
 .PHONY: all
-all: test.ppm
-	ffmpeg -y -i test.ppm /disk1/www/raytracer/test.png
+all: /disk1/www/raytracer/test.png
 
-test.ppm: raytracer
+/disk1/www/raytracer/test.png: raytracer
+	# test.ppm: raytracer
 	echo ""
-	time ./raytracer
+	time ./raytracer $@
 	echo ""
 	echo ""
 	echo ""
