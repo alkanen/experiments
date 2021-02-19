@@ -19,7 +19,7 @@ all: test.ppm
 
 test.ppm: raytracer
 	echo ""
-	time ./raytracer > $@
+	time ./raytracer
 	echo ""
 	echo ""
 	echo ""

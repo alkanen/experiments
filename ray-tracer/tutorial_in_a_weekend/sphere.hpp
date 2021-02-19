@@ -7,7 +7,7 @@
 class Sphere : public Hittable {
 public:
   Sphere() {}
-  Sphere(Point3 cen, double r, shared_ptr<Material> m) :
+  Sphere(Point3 cen, double r, Material *m) :
     center(cen), radius(r), material(m) {};
 
   virtual bool hit(
@@ -17,7 +17,7 @@ public:
 public:
   Point3 center;
   double radius;
-  shared_ptr<Material> material;
+  Material *material;
 };
 
 bool Sphere::hit(const Ray &r, double t_min, double t_max, HitRecord &rec) const

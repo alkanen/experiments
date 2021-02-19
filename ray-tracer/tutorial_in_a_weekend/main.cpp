@@ -10,8 +10,6 @@
 #include <iostream>
 #include <mutex>
 
-// #include "tqdm.hpp"
-
 #include "rtweekend.hpp"
 #include "color.hpp"
 #include "hittable_list.hpp"
@@ -41,29 +39,36 @@ Color ray_color(const Ray &r, const Hittable &world, int depth)
 
 int main(void)
 {
-  // Image geometry
+  // Image properties
   const auto aspect_ratio = 16.0 / 9.0;
   const int width = 1920;
   const int height = static_cast<int>(width / aspect_ratio);
-  const int samples_per_pixel = 10000;
+  const int min_samples_per_pixel = 10;
+  const int max_samples_per_pixel = 10000000;
   const int max_depth = 25;
+  const double pincer_limit = 0.0005;
 
   // World
   HittableList world;
 
-  auto material_ground = make_shared<Lambertian>(Color(0.8, 0.8, 0.0));
-  auto material_center = make_shared<Lambertian>(Color(0.1, 0.2, 0.5));
-  auto material_left   = make_shared<Dielectric>(1.5);
-  auto material_inner  = make_shared<Dielectric>(2.5);
-  auto material_right  = make_shared<Metal>(Color(0.8, 0.6, 0.2), 0.0);
+  auto material_ground = Lambertian(Color(0.8, 0.8, 0.0));
+  auto material_center = Lambertian(Color(0.1, 0.2, 0.5));
+  auto material_left   = Dielectric(1.5);
+  auto material_inner  = Dielectric(2.5);
+  auto material_right  = Metal(Color(0.8, 0.6, 0.2), 0.0);
 
-  world.add(make_shared<Sphere>(Point3( 0.0, -100.5, -1.0), 100.0, material_ground));
-  world.add(make_shared<Sphere>(Point3( 0.0,    0.0, -1.0),   0.5, material_center));
-  world.add(make_shared<Sphere>(Point3(-1.0,    0.0, -1.0),   0.5, material_left));
-  world.add(make_shared<Sphere>(Point3(-1.0,    0.0, -1.0), -0.45, material_left));
+  auto sphere1 = Sphere(Point3( 0.0, -100.5, -1.0), 100.0, &material_ground);
+  auto sphere2 = Sphere(Point3( 0.0,    0.0, -1.0),   0.5, &material_center);
+  auto sphere3 = Sphere(Point3(-1.0,    0.0, -1.0),   0.5, &material_left);
+  auto sphere4 = Sphere(Point3(-1.0,    0.0, -1.0), -0.45, &material_left);
+  auto sphere5 = Sphere(Point3( 1.0,    0.0, -1.0),   0.5, &material_right);
+  world.add(&sphere1);
+  world.add(&sphere2);
+  world.add(&sphere3);
+  world.add(&sphere4);
   //world.add(make_shared<Sphere>(Point3(-1.0,    0.0, -1.0),  0.45, material_inner));
   //world.add(make_shared<Sphere>(Point3(-1.0,    0.0, -1.0), -0.40, material_inner));
-  world.add(make_shared<Sphere>(Point3( 1.0,    0.0, -1.0),   0.5, material_right));
+  world.add(&sphere5);
 
   // Camera
   auto look_from = Point3(-2, 2, 1);
@@ -85,6 +90,7 @@ int main(void)
   // Render
   std::cerr << "Begin" << std::endl;
   auto line_count = 0;
+  auto sample_count = 0;
   std::mutex mutex;
   for_each(
     std::execution::par_unseq,
@@ -95,39 +101,69 @@ int main(void)
      &cam,
      &world,
      &max_depth,
+     &pincer_limit,
      &line_count,
+     &sample_count,
      &mutex
     ] (auto &&j) {
+      auto line_sample_count = 0;
       for (int i = 0; i < width; ++i) {
-        Color pixel_color(0, 0, 0);
-        for(int s = 0; s < samples_per_pixel; s++) {
+        Color c1(0, 0, 0), c2(0, 0, 0);
+        auto count = 0;
+        for(int s = 0; s < min_samples_per_pixel / 2; s++) {
           auto u = (i + random_double()) / (width - 1);
           auto v = (j + random_double()) / (height - 1);
 
-          Ray r = cam.get_ray(u, v);
-          pixel_color += ray_color(r, world, max_depth);
+          // Ray calculation contains some randomness
+          c1 += ray_color(cam.get_ray(u, v), world, max_depth);
+          c2 += ray_color(cam.get_ray(u, v), world, max_depth);
+          count += 2;
         }
 
-        data[(height - j - 1) * width * 3 + i * 3 + 0] = pixel_color.x();
-        data[(height - j - 1) * width * 3 + i * 3 + 1] = pixel_color.y();
-        data[(height - j - 1) * width * 3 + i * 3 + 2] = pixel_color.z();
+        // Adaptive loop
+        for(int s = min_samples_per_pixel / 2; s < max_samples_per_pixel / 2; s++) {
+          auto u = (i + random_double()) / (width - 1);
+          auto v = (j + random_double()) / (height - 1);
+
+          // Ray r = cam.get_ray(u, v);
+          // pixel_color += ray_color(r, world, max_depth);
+          // Ray calculation contains some randomness
+          c1 += ray_color(cam.get_ray(u, v), world, max_depth);
+          c2 += ray_color(cam.get_ray(u, v), world, max_depth);
+          count += 2;
+
+          //if((c1 - c2).length() / (c1+c2).length() < pincer_limit)
+          auto dist = fabs((c1.x() - c2.x()) + (c1.y() - c2.y()) + (c1.z() - c2.z()));
+          auto total = (c1.x() + c2.x()) + (c1.y() + c2.y()) + (c1.z() + c2.z());
+          if(dist / total < pincer_limit)
+            break;
+        }
+
+        line_sample_count += count;
+        data[(height - j - 1) * width * 3 + i * 3 + 0] = (c1 + c2).x() / count;
+        data[(height - j - 1) * width * 3 + i * 3 + 1] = (c1 + c2).y() / count;
+        data[(height - j - 1) * width * 3 + i * 3 + 2] = (c1 + c2).z() / count;
       }
 
       {
         const std::lock_guard<std::mutex> lock(mutex);
         ++line_count;
+        sample_count += line_sample_count;
         std::cerr << "\rScanline " << line_count << "/" << height << std::flush;
       }
     }
   );
   std::cerr << "\nRender complete." << std::endl;
+  std::cerr << "Average " << ((double)sample_count / (width * height)) << " samples per pixel" << std::endl;
 
   // Dump PPM file
-  std::cout << "P3\n" << width << ' ' << height << "\n255\n";
+  FILE *fp = fopen("test.ppm", "w");
+  fprintf(fp, "P3\n%d %d\n255\n", width, height);
   for(auto raw : data) {
-    auto col = static_cast<int>(256 * clamp(sqrt(raw / samples_per_pixel), 0.0, 0.999));
-    std::cout << col << " ";
+    auto col = static_cast<int>(256 * clamp(sqrt(raw), 0.0, 0.999));
+    fprintf(fp, "%d ", col);
   }
+  fclose(fp);
 
   std::cerr << "\nDone." << std::endl;
 
