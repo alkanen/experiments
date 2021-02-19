@@ -127,14 +127,18 @@ int main(int argc, char *argv[])
     scanlines.begin(),
     scanlines.end(),
     [
-     &data,
-     &cam,
-     &world,
-     &max_depth,
-     &pincer_limit,
-     &line_count,
-     &sample_count,
-     &mutex
+      &width,
+      &height,
+      &data,
+      &cam,
+      &world,
+      &max_depth,
+      &pincer_limit,
+      &min_samples_per_pixel,
+      &max_samples_per_pixel,
+      &line_count,
+      &sample_count,
+      &mutex
     ] (auto &&j) {
       auto line_sample_count = 0;
       for (int i = 0; i < width; ++i) {
@@ -186,16 +190,7 @@ int main(int argc, char *argv[])
   std::cerr << "\nRender complete." << std::endl;
   std::cerr << "Average " << ((double)sample_count / (width * height)) << " samples per pixel" << std::endl;
 
-  // Dump PPM file
-  /*
-  FILE *fp = fopen("test.ppm", "w");
-  fprintf(fp, "P3\n%d %d\n255\n", width, height);
-  for(auto raw : data) {
-    auto col = static_cast<int>(256 * clamp(sqrt(raw), 0.0, 0.999));
-    fprintf(fp, "%d ", col);
-  }
-  fclose(fp);
-  */
+  // Dump image
   std::cerr << "Saving image to '" << filename << "'" << std::endl;
   save_png(data, width, height, filename);
 
