@@ -15,11 +15,8 @@ add_executable(raytracer
   src/hittable.hpp
   src/hittable_list.hpp
   src/material.hpp
-  src/ppm.hpp
   src/ray.hpp
   src/rtweekend.hpp
   src/sphere.hpp
-  src/tqdm.hpp
-  src/tqdm_utils.hpp
   src/vec3.hpp
-  )
+)
