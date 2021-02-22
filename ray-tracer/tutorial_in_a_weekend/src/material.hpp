@@ -90,4 +90,24 @@ private:
   }
 };
 
+class Texture : public Material {
+public:
+  Texture(const uint32_t width, const uint32_t height, const uint8_t *data, double reflectance) :
+    w(width), h(height), d(data), r(reflectance > 1 ? 1 : reflectance) {}
+
+  virtual bool scatter(
+    const Ray &r_in, const HitRecord &rec, Color &attenuation, Ray &scattered
+  ) const override {
+    auto unit_direction = unit_vector(r_in.direction());
+    attenuation = Color(1, 0, 0);
+    scattered = r_in;
+    return false;
+  }
+
+public:
+  const uint32_t w, h;
+  const uint8_t *d;
+  double r;
+};
+
 #endif
