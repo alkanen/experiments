@@ -19,4 +19,25 @@ add_executable(raytracer
   src/rtweekend.hpp
   src/sphere.hpp
   src/vec3.hpp
+  src/stb_image.h
+  src/stb_image_write.h
+)
+
+
+add_executable(raytracer_scene
+  src/main_scene.cpp
+  src/camera.hpp
+  src/color.hpp
+  src/hittable.hpp
+  src/hittable_list.hpp
+  src/material.hpp
+  src/ray.hpp
+  src/rtweekend.hpp
+  src/sphere.hpp
+  src/vec3.hpp
+  src/image_plane.hpp
+  src/greenmeadow.h
+  src/greenmeadow.cpp
+  src/stb_image.h
+  src/stb_image_write.h
 )
