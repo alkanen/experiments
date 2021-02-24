@@ -1,24 +1,55 @@
 #ifndef IMAGE_PLANE_H
 #define IMAGE_PLANE_H
 
+#include <iostream>
+
 #include "hittable.hpp"
 #include "vec3.hpp"
 
+/*
+Create a bounded plane defined by a point on the plane and two vectors
+lying on it.  The point is the center of the rectangle and the two
+vectors point to two orthogonal midpoints:
 
+0,0               0,4
+ +-----------------+
+ |                 |
+ |                 |
+ |       p   v1    |
+ |        x<------>|
+ |        ^        |
+ |     v2 |        |
+ |        v        |
+ +-----------------+
+3,0               3,4
+
+p  = (1.5, 2, 0)
+v1 = (0, 2, 0)
+v2 = (1.5, 0, 0)
+
+The normal of the plane is in the direction of v1 x v2.
+*/
+
+double epsilon = 1e-6;
 
 class ImagePlane : public Hittable {
 public:
   ImagePlane() {}
-  ImagePlane(Point3 top_left, Point3 bottom_right, Material *material) :
-    tl(top_left), br(bottom_right), m(material) {
-    // x is left-right
-    // y is up-down
-    // if z = 0:
-    if(top_left.z() != bottom_right.z())
-      fprintf(stdout, "Warning, plane requires Z to be the same for both corners\n");
+  ImagePlane(Point3 center, Vec3 semi_a, Vec3 semi_b, Material *material) :
+    center(center), material(material) {
+    auto dot_prod = dot(semi_a, semi_b);
+    if(fabs(dot_prod) >= epsilon) {
+      throw "semi_a and semi_b must be orthogonal";
+    }
 
-    tr = Vec3(bottom_right.x(), top_left.y(), top_left.z());
-    bl = Vec3(top_left.x(), bottom_right.y(), top_left.z());
+    normal = cross(semi_a, semi_b);
+    tl = center + semi_a - semi_b;
+    tr = center + semi_a + semi_b;
+    br = center - semi_a + semi_b;
+    bl = center - semi_a - semi_b;
+
+    std::cout << "From " << tl << " to " << tr << std::endl;
+    std::cout << " and " << bl << " to " << br << std::endl;
   };
 
   virtual bool hit(
@@ -26,95 +57,84 @@ public:
   ) const override;
 
 public:
-  Point3 tl, tr, bl, br;
-  Material *m;
+  Point3 center;
+  Material *material;
+  Vec3 tl, tr, br, bl;
+  Vec3 normal;
 
 private:
-  bool hits_triangle(
-    const Ray &r, double t_min, double t_max,
-    const Point3 &v0, const Point3 &v1, const Point3 &v2, Point3 &IntersectPoint
+  double triangle_ray_intersect(
+    const Ray &ray, const Point3 &v0, const Point3 &v1, const Point3 &v2
   ) const;
 };
 
-bool ImagePlane::hit(const Ray &r, double t_min, double t_max, HitRecord &rec) const
+bool ImagePlane::hit(const Ray &ray, double t_min, double t_max, HitRecord &rec) const
 {
-  Point3 intersect;
-  if(this->hits_triangle(r, t_min, t_max, tl, tr, bl, intersect)) {
-    // fprintf(stderr, "First hit\n");
-    // fprintf(stderr, "Intersect: %f, %f, %f\n", intersect.x(), intersect.y(), intersect.z());
-  } else if(this->hits_triangle(r, t_min, t_max, tr, br, bl, intersect)) {
-    // fprintf(stderr, "Second hit\n");
-    // fprintf(stderr, "Intersect: %f, %f, %f\n", intersect.x(), intersect.y(), intersect.z());
-  } else {
-    /*
-    auto o = r.origin();
-    auto d = r.direction();
-    fprintf(
-      stderr,
-      "No hit (%f, %f, %f) -> (%f, %f, %f)\n",
-      o.x(), o.y(), o.z(),
-      d.x(), d.y(), d.z()
-    );
-    */
+  //auto vec = center - ray.origin();
+  //auto tmp = dot(vec, ray.direction());
+  auto tmp = dot(normal, ray.direction());
+  if(fabs(tmp) < epsilon) {
+    std::cout << "tmp = " << normal << ".dot(" << ray.direction() << ")" << std::endl;
+    std::cout << "tmp (" << tmp << ") is less than " << epsilon << std::endl;
     return false;
   }
 
-  auto dist = (intersect - r.origin()).length();
-  if(dist < t_min or dist > t_max) {
-    fprintf(stderr, "Distance %f is outside limit of (%f, %f)\n", dist, t_min, t_max);
-    return false;
-  }
+  int sign = static_cast<int>(round(tmp / fabs(tmp)));
+  double t = triangle_ray_intersect(ray, tl, tr, br);
+  if(t == 0)
+    t = triangle_ray_intersect(ray, tl, br, bl);
 
-  rec.p = intersect;
-  rec.t = dist;
-  rec.set_face_normal(r, Vec3(0, 0, -1));
-  rec.material = m;
+  t *= sign;
 
-  return true;
-}
-
-bool ImagePlane::hits_triangle(
-  const Ray &r, double t_min, double t_max,
-  const Point3 &v0, const Point3 &v1, const Point3 &v2, Point3 &intersectPoint
-) const
-{
-  /*
-  bool RayIntersectsTriangle(Vector3D rayOrigin, 
-                           Vector3D rayVector, 
-                           Triangle* inTriangle,
-                           Vector3D& outIntersectionPoint)
-  */
-
-  const double EPSILON = 0.0000001;
-  Point3 rayOrigin = r.origin();
-  Vec3 rayVector = r.direction();
-
-  Vec3 edge1, edge2, h, s, q;
-  double a, f, u, v;
-  edge1 = v1 - v0;
-  edge2 = v2 - v0;
-  h = cross(rayOrigin, edge2);
-  a = dot(edge1, h);
-  if (a > -EPSILON && a < EPSILON)
-    return false;    // This ray is parallel to this triangle.
-  f = 1.0/a;
-  s = rayOrigin - v0;
-  u = f * dot(s, h);
-  if (u < 0.0 || u > 1.0)
-    return false;
-  q = cross(s, edge1);
-  v = f * dot(rayVector, q);
-  if (v < 0.0 || u + v > 1.0)
-    return false;
-  // At this stage we can compute t to find out where the intersection point is on the line.
-  float t = f * dot(edge2, q);
-  // ray intersection
-  if(t > EPSILON) {
-    intersectPoint = rayOrigin + rayVector * t;
+  if(t > t_min && t < t_max) {
+    rec.t = t;
+    rec.p = ray.at(t);
+    rec.set_face_normal(ray, normal);
+    rec.material = material;
     return true;
-  } else {
-    // This means that there is a line intersection but not a ray intersection.
-    return false;
   }
+
+  std::cout << "t is outside valid range (" << t_min << ", " << t_max << ")" << std::endl;
+  return false;
 }
+
+double ImagePlane::triangle_ray_intersect(const Ray &ray, const Point3 &v0, const Point3 &v1, const Point3 &v2) const
+{
+  Vec3 edge1 = v1 - v0;
+  Vec3 edge2 = v2 - v0;
+
+  Vec3 h = cross(edge2, ray.origin());
+  double a = dot(edge1, h);
+
+  if(fabs(a) < epsilon) {
+    // Line is parallell with plane of triangle
+    // std::cout << "Line is parallell with plane" << std::endl;
+    return 0.0;
+  }
+
+  double inv_a = 1.0 / a;
+  Vec3 s = ray.origin() - v0;
+
+  double u = inv_a * dot(s, h);
+  if(u < 0 || u > 1) {
+    // Out of bounds
+    std::cout << "u is out of bounds" << std::endl;
+    return 0.0;
+  }
+
+  Vec3 q = cross(s, edge1);
+  double v = inv_a * dot(ray.direction(), q);
+  if(v < 0 || u + v > 1) {
+    // Out of bounds
+    std::cout << "v is out of bounds" << std::endl;
+    return 0.0;
+  }
+
+  auto retval = inv_a * dot(edge2, q);
+  if(retval <= 0) {
+    std::cout << "dot product is 0 or less" << std::endl;
+  }
+  return retval;
+}
+
 #endif

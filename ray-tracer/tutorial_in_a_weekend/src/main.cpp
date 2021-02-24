@@ -18,6 +18,7 @@
 #include "color.hpp"
 #include "hittable_list.hpp"
 #include "sphere.hpp"
+#include "moving_sphere.hpp"
 #include "camera.hpp"
 #include "material.hpp"
 
@@ -61,54 +62,99 @@ Color ray_color(const Ray &r, const Hittable &world, int depth)
   return (1.0 - t) * Color(1.0, 1.0, 1.0) + t * Color(0.5, 0.7, 1.0);
 }
 
+HittableList random_scene() {
+  HittableList world;
+
+  auto ground_material = new Lambertian(Color(0.5, 0.5, 0.5));
+  auto sphere = new Sphere(Point3(0,-1000,0), 1000, ground_material);
+  world.add(sphere);
+
+  for (int a = -11; a < 11; a++) {
+    for (int b = -11; b < 11; b++) {
+      auto choose_mat = random_double();
+      Point3 center(a + 0.9*random_double(), 0.2, b + 0.9*random_double());
+
+      if ((center - Point3(4, 0.2, 0)).length() > 0.9) {
+        Material *sphere_material;
+        Hittable *sphere_tmp;
+        if (choose_mat < 0.8) {
+          // diffuse
+          auto albedo = Color::random() * Color::random();
+          sphere_material = new Lambertian(albedo);
+          Point3 center2 = center + Vec3(0, random_double(0,.5), 0);
+          sphere_tmp = new MovingSphere(
+            center,
+            center2,
+            0.0,
+            1.0,
+            0.2,
+            sphere_material
+          );
+          world.add(sphere_tmp);
+        } else if (choose_mat < 0.95) {
+          // metal
+          auto albedo = Color::random(0.5, 1);
+          auto fuzz = random_double(0, 0.5);
+          sphere_material = new Metal(albedo, fuzz);
+          sphere_tmp = new Sphere(center, 0.2, sphere_material);
+          world.add(sphere_tmp);
+        } else {
+          // glass
+          sphere_material = new Dielectric(1.5);
+          sphere_tmp = new Sphere(center, 0.2, sphere_material);
+          world.add(sphere_tmp);
+        }
+      }
+    }
+  }
+
+  // Middle
+  Material *material1 = new Dielectric(1.5);
+  Sphere *sphere1 = new Sphere(Point3(0, 1, 0), 1.0, material1);
+  world.add(sphere1);
+
+  // Farthest
+  Material *material2 = new Lambertian(Color(0.4, 0.2, 0.1));
+  Sphere *sphere2 = new Sphere(Point3(-4, 1, 0), 1.0, material2);
+  world.add(sphere2);
+
+  // Closest
+  Material * material3 = new Metal(Color(0.7, 0.6, 0.5), 0.0);
+  Sphere *sphere3 = new Sphere(Point3(4, 1, 0), 1.0, material3);
+  world.add(sphere3);
+
+  return world;
+}
+
 int main(int argc, char *argv[])
 {
   char *filename;
   if(argc >= 2) {
     filename = argv[1];
   } else {
-    filename = "test.png";
+    filename = const_cast<char*>("test.png");
   }
   // Image properties
   const auto aspect_ratio = 16.0 / 9.0;
-  const int width = 1920*2;
+  const int width = 400;
   const int height = static_cast<int>(width / aspect_ratio);
   const int min_samples_per_pixel = 10;
-  const int max_samples_per_pixel = 10000000;
-  const int max_depth = 25;
+  const int max_samples_per_pixel = 1000;
+  const int max_depth = 50;
   const double pincer_limit = 0.00001;
 
   // World
-  HittableList world;
-
-  auto material_ground = Lambertian(Color(0.8, 0.8, 0.0));
-  auto material_center = Lambertian(Color(0.1, 0.2, 0.5));
-  auto material_left   = Dielectric(1.5);
-  auto material_inner  = Dielectric(2.5);
-  auto material_right  = Metal(Color(0.8, 0.6, 0.2), 0.0);
-
-  auto sphere1 = Sphere(Point3( 0.0, -100.5, -1.0), 100.0, &material_ground);
-  auto sphere2 = Sphere(Point3( 0.0,    0.0, -1.0),   0.5, &material_center);
-  auto sphere3 = Sphere(Point3(-1.0,    0.0, -1.0),   0.5, &material_left);
-  auto sphere4 = Sphere(Point3(-1.0,    0.0, -1.0), -0.45, &material_left);
-  auto sphere5 = Sphere(Point3( 1.0,    0.0, -1.0),   0.5, &material_right);
-  world.add(&sphere1);
-  world.add(&sphere2);
-  world.add(&sphere3);
-  world.add(&sphere4);
-  //world.add(make_shared<Sphere>(Point3(-1.0,    0.0, -1.0),  0.45, material_inner));
-  //world.add(make_shared<Sphere>(Point3(-1.0,    0.0, -1.0), -0.40, material_inner));
-  world.add(&sphere5);
+  HittableList world = random_scene();
 
   // Camera
-  auto look_from = Point3(-2, 2, 1);
-  auto look_at = Point3(0, 0, -1);
+  auto look_from = Point3(13, 2, 3);
+  auto look_at = Point3(0, 0, 0);
   auto vup = Vec3(0, 1, 0);
-  auto fov = 90.0;
-  auto dist_to_focus = (look_at - look_from).length();
-  auto aperture = .20;
+  auto fov = 20.0;
+  auto dist_to_focus = 10.0;
+  auto aperture = .1;
 
-  Camera cam(look_from, look_at, vup, fov, aspect_ratio, aperture, dist_to_focus);
+  Camera cam(look_from, look_at, vup, fov, aspect_ratio, aperture, dist_to_focus, 0.0, 1.0);
 
   // Image data
   std::vector<double> data(3 * height * width);

@@ -3,7 +3,7 @@
 
 #include "rtweekend.hpp"
 
-struct HitRecord;
+class HitRecord;
 
 class Material {
 public:
@@ -25,7 +25,7 @@ public:
     if (scatter_direction.near_zero())
       scatter_direction = rec.normal;
 
-    scattered = Ray(rec.p, scatter_direction);
+    scattered = Ray(rec.p, scatter_direction, r_in.time());
     attenuation = albedo;
     return true;
   }
@@ -42,7 +42,7 @@ public:
     const Ray &r_in, const HitRecord &rec, Color &attenuation, Ray &scattered
   ) const override {
     Vec3 reflected = reflect(unit_vector(r_in.direction()), rec.normal);
-    scattered = Ray(rec.p, reflected + fuzz * random_in_unit_sphere());
+    scattered = Ray(rec.p, reflected + fuzz * random_in_unit_sphere(), r_in.time());
     attenuation = albedo;
     return (dot(scattered.direction(), rec.normal) > 0);
   }
@@ -74,7 +74,7 @@ public:
     else
       direction = refract(unit_direction, rec.normal, refraction_ratio);
 
-    scattered = Ray(rec.p, direction);
+    scattered = Ray(rec.p, direction, r_in.time());
     return true;
   }
 
@@ -88,26 +88,6 @@ private:
     r0 = r0*r0;
     return r0 + (1-r0)*pow((1 - cosine),5);
   }
-};
-
-class Texture : public Material {
-public:
-  Texture(const uint32_t width, const uint32_t height, const uint8_t *data, double reflectance) :
-    w(width), h(height), d(data), r(reflectance > 1 ? 1 : reflectance) {}
-
-  virtual bool scatter(
-    const Ray &r_in, const HitRecord &rec, Color &attenuation, Ray &scattered
-  ) const override {
-    auto unit_direction = unit_vector(r_in.direction());
-    attenuation = Color(1, 0, 0);
-    scattered = r_in;
-    return false;
-  }
-
-public:
-  const uint32_t w, h;
-  const uint8_t *d;
-  double r;
 };
 
 #endif

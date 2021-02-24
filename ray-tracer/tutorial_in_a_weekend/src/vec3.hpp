@@ -72,7 +72,7 @@ using Point3 = Vec3;   // 3D point
 
 inline std::ostream& operator<<(std::ostream &out, const Vec3 &v)
 {
-  return out << v.e[0] << ' ' << v.e[1] << ' ' << v.e[2];
+  return out << "Vec3(" << v.e[0] << ", " << v.e[1] << ", " << v.e[2] << ")";
 }
 
 inline Vec3 operator+(const Vec3 &u, const Vec3 &v)
