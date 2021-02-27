@@ -103,17 +103,23 @@ HittableList random_scene()
     }
   }
 
+  // Middle
   Material *material1 = new Dielectric(1.5);
   Sphere *sphere1 = new Sphere(Point3(0, 1, 0), 1.0, material1);
   world.add(sphere1);
 
+  // Farthest
   Material *material2 = new Lambertian(Color(0.4, 0.2, 0.1));
   Sphere *sphere2 = new Sphere(Point3(-4, 1, 0), 1.0, material2);
   world.add(sphere2);
 
+  // Closest
   Material * material3 = new Metal(Color(0.7, 0.6, 0.5), 0.0);
   Sphere *sphere3 = new Sphere(Point3(4, 1, 0), 1.0, material3);
   world.add(sphere3);
+
+  auto image1 = new ImagePlane(Point3(-2, 1, 1), Vec3(2, 0, 0), Vec3(0, 1, 0), material3);
+  world.add(image1);
 
   return world;
 }
@@ -149,26 +155,27 @@ int main(int argc, char *argv[])
   if(argc >= 2) {
     filename = argv[1];
   } else {
-    filename = const_cast<char*>("test.png");
+    filename = const_cast<char*>("../test.png");
   }
   // Image properties
   const auto aspect_ratio = 3.0 / 2.0;
-  const int width = 1200/4;
+  const int width = 1200/2;
   const int height = static_cast<int>(width / aspect_ratio);
   const int min_samples_per_pixel = 10;
-  const int max_samples_per_pixel = 500;
-  const int max_depth = 2;
-  const double pincer_limit = 0.0001;
+  const int max_samples_per_pixel = 1000;
+  const int max_depth = 20;
+  const double pincer_limit = 0.00001;
 
   // World
-  HittableList world = block_scene();
+  // HittableList world = block_scene();
+  HittableList world = random_scene();
 
   // Camera
-  //auto look_from = Point3(13, 2, 3);
-  auto look_from = Point3(0, 0, -10);
+  auto look_from = Point3(13, 2, 3);
+  //auto look_from = Point3(0, 0, -10);
   auto look_at = Point3(0, 0, 0);
   auto vup = Vec3(0, 1, 0);
-  auto fov = 90.0;
+  auto fov = 20.0;
   auto dist_to_focus = 10.0;
   auto aperture = .01;
 

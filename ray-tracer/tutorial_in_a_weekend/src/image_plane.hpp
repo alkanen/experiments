@@ -70,21 +70,23 @@ bool ImagePlane::hit(const Ray &ray, double t_min, double t_max, HitRecord &rec)
   if(fabs(tmp) < epsilon)
     return false;
 
-  int sign = round(tmp / fabs(tmp));
+  int sign = static_cast<int>(round(tmp / fabs(tmp)));
   double t = triangle_ray_intersect(ray, tl, tr, br);
   if(t == 0)
     t = triangle_ray_intersect(ray, tl, br, bl);
 
   t *= sign;
 
-  if(t >= t_min and t < t_max) {
+  if(t >= t_min && t < t_max) {
     rec.t = t;
     rec.p = ray.at(t);
     rec.set_face_normal(ray, normal);
     rec.material = material;
-  }
-  return true;
 
+    return true;
+  }
+
+  return false;
 }
 
 double ImagePlane::triangle_ray_intersect(const Ray &ray, const Point3 &v0, const Point3 &v1, const Point3 &v2) const

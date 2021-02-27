@@ -3,7 +3,7 @@
 
 #include "rtweekend.hpp"
 
-struct HitRecord;
+class HitRecord;
 
 class Material {
 public:
