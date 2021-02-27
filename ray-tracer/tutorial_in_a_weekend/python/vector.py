@@ -44,6 +44,9 @@ class Vector(point.Point):
     def __mul__(self, const: float) -> "Vector":
         return Vector(self.x() * const, self.y() * const, self.z() * const)
 
+    def __rmul__(self, const: float) -> "Vector":
+        return self * const
+
     def __itruediv__(self, const: float) -> "Vector":
         self *= 1 / const
         return self
@@ -69,6 +72,10 @@ class Vector(point.Point):
             self.z() * other.x() - self.x() * other.z(),
             self.x() * other.y() - self.y() * other.x(),
         )
+
+    def to_unit(self) -> "Vector":
+        """Create a new unit vector in the same direction as this vector."""
+        return self / self.length()
 
     def near_zero(self) -> bool:
         """Return true if the vector is close to zero in all dimensions."""

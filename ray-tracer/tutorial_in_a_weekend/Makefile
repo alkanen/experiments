@@ -1,5 +1,5 @@
 CC=g++-10
-CCFLAGS+=-std=c++17 -Wall -O3 -I.
+CCFLAGS+=-g -DDEBUG -std=c++17 -Wall -O3 -I.
 LDFLAGS+=-lm -ltbb
 HEADERS=src/camera.hpp \
         src/color.hpp \

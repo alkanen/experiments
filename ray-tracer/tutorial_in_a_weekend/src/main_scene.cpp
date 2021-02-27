@@ -135,14 +135,10 @@ HittableList block_scene()
   );
 
   Material *metal_material = new Metal(Color(0.7, 0.6, 0.5), 0.0);
-  auto image = new ImagePlane(Point3(-100, 100, -50), Point3(100, -100, -50), metal_material);
-  world.add(image);
-  auto image2 = new ImagePlane(Point3(-100, 100, 50), Point3(100, -100, 50), metal_material);
+  auto image1 = new ImagePlane(Point3(0, 0, -50), Vec3(100, 0, 0), Vec3(0, 100, 0), metal_material);
+  auto image2 = new ImagePlane(Point3(0, 0, 50), Vec3(100, 0, 0), Vec3(0, 100, 0), metal_material);
+  world.add(image1);
   world.add(image2);
-  auto image3 = new ImagePlane(Point3(-100, 100, 50), Point3(100, -100, 50), texture_material);
-  world.add(image3);
-  auto image4 = new ImagePlane(Point3(-100, 100, -50), Point3(100, -100, -50), texture_material);
-  world.add(image4);
 
   return world;
 }

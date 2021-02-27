@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
   if(argc >= 2) {
     filename = argv[1];
   } else {
-    filename = "test.png";
+    filename = const_cast<char*>("test.png");
   }
   // Image properties
   const auto aspect_ratio = 16.0 / 9.0;

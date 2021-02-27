@@ -1,3 +1,5 @@
+from math import inf
+
 from plane import Rectangle
 from point import Point
 from ray import Ray
@@ -11,16 +13,16 @@ class Plane:
 
         normal = vec1.cross(vec2) / vec1.cross(vec2).length()
 
-        print("vec1:", vec1)
-        print("vec2:", vec2)
-        print("norm:", normal)
+        # print("vec1:", vec1)
+        # print("vec2:", vec2)
+        # print("norm:", normal)
 
         self.a = normal.x()
         self.b = normal.y()
         self.c = normal.z()
         self.d = normal.dot(v0)
 
-        print("abcd:", self.a, self.b, self.c, self.d)
+        # print("abcd:", self.a, self.b, self.c, self.d)
 
     def on_plane(self, point: Point):
         return (
@@ -33,7 +35,7 @@ class Plane:
 
 
 def main():
-    p = Point(0, 0, 0)
+    p = Point(0, 0, -1)
     v1 = Vector(2, 0, 0)
     v2 = Vector(0, 2, 0)
     rectangle = Rectangle(p, v1, v2)
@@ -65,14 +67,17 @@ def main():
         return
 
     if True:
-        look_from = Point(1, 1, -3)
-        look_at = Vector(0, 0, 3)
-        intersect = look_from + look_at
-        print("Intersect on plane:", plane.on_plane(intersect))
+        look_from = Point(0, 0, 3)
+        # look_from = Point(5, 5, 0)
+        look_at = Vector(0, 0, -10)
+        # intersect = look_from + look_at
+        # print("Intersect on plane:", plane.on_plane(intersect))
 
         ray = Ray(look_from, look_at)
-        res = rectangle.hit(ray)
+        hit_rec = {}
+        res = rectangle.hit(ray, min_t=1e-8, max_t=inf, hit_rec=hit_rec)
         print("Hit on plane:", res)
+        print("Record:", hit_rec)
 
         return
 
@@ -83,7 +88,7 @@ def main():
                 ray = Ray(Point(x / 10.0, y / 10.0, z / 10.0), Vector(0, 0, 1))
                 res = rectangle.hit(ray)
 
-                key = f"{x:3d}_{y:3d}_{z:3d}"
+                key = f"{x:d}x{y:d}x{z:d}"
                 results[key] = res
                 if res:
                     print(key)
