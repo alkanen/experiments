@@ -73,11 +73,8 @@ bool ImagePlane::hit(const Ray &ray, double t_min, double t_max, HitRecord &rec)
   //auto vec = center - ray.origin();
   //auto tmp = dot(vec, ray.direction());
   auto tmp = dot(normal, ray.direction());
-  if(fabs(tmp) < epsilon) {
-    std::cout << "tmp = " << normal << ".dot(" << ray.direction() << ")" << std::endl;
-    std::cout << "tmp (" << tmp << ") is less than " << epsilon << std::endl;
+  if(fabs(tmp) < epsilon)
     return false;
-  }
 
   int sign = static_cast<int>(round(tmp / fabs(tmp)));
   double t = triangle_ray_intersect(ray, tl, tr, br);
@@ -95,6 +92,16 @@ bool ImagePlane::hit(const Ray &ray, double t_min, double t_max, HitRecord &rec)
   }
 
   std::cout << "t is outside valid range (" << t_min << ", " << t_max << ")" << std::endl;
+
+  if(t >= t_min && t < t_max) {
+    rec.t = t;
+    rec.p = ray.at(t);
+    rec.set_face_normal(ray, normal);
+    rec.material = material;
+
+    return true;
+  }
+
   return false;
 }
 
@@ -134,6 +141,7 @@ double ImagePlane::triangle_ray_intersect(const Ray &ray, const Point3 &v0, cons
   if(retval <= 0) {
     std::cout << "dot product is 0 or less" << std::endl;
   }
+
   return retval;
 }
 
