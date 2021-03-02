@@ -3,6 +3,8 @@
 
 #include "rtweekend.hpp"
 
+#include "aabb.hpp"
+
 class Material;
 
 class HitRecord {
@@ -28,6 +30,7 @@ public:
 class Hittable {
 public:
   virtual bool hit(const Ray &r, double t_min, double t_max, HitRecord &rec) const = 0;
+  virtual bool bounding_box(double time0, double time1, Aabb &output_box) const = 0;
 };
 
 #endif

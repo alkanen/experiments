@@ -13,6 +13,9 @@ public:
   virtual bool hit(
     const Ray &r, double t_min, double t_max, HitRecord &rec
   ) const override;
+  virtual bool bounding_box(
+    double time0, double time1, Aabb &output_box
+  ) const override;
 
 public:
   Point3 center;
@@ -46,6 +49,15 @@ bool Sphere::hit(const Ray &r, double t_min, double t_max, HitRecord &rec) const
   rec.set_face_normal(r, outward_normal);
   rec.material = material;
 
+  return true;
+}
+
+bool Sphere::bounding_box(double time0, double time1, Aabb &output_box) const
+{
+  output_box = Aabb(
+    center - Vec3(radius, radius, radius),
+    center + Vec3(radius, radius, radius)
+  );
   return true;
 }
 
