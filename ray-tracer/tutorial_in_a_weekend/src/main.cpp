@@ -150,6 +150,15 @@ HittableList two_perlin_spheres() {
   return objects;
 }
 
+HittableList earth()
+{
+  auto earth_texture = new ImageTexture("earthmap.jpg");
+  auto earth_surface = new Lambertian(earth_texture);
+  auto globe = new Sphere(Point3(0,0,0), 2, earth_surface);
+
+  return HittableList(globe);
+}
+
 int main(int argc, char *argv[])
 {
   char *filename;
@@ -194,10 +203,17 @@ int main(int argc, char *argv[])
     break;
 
   case 3:
-  default:
     world = two_perlin_spheres();
     look_from = Point3(13,2,3);
     look_at = Point3(0,0,0);
+    vfov = 20.0;
+    break;
+
+  case 4:
+  default:
+    world = earth();
+    look_from = Point3(13, 2, 3);
+    look_at = Point3(0, 0, 0);
     vfov = 20.0;
     break;
   }
