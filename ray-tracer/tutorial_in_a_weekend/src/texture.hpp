@@ -3,6 +3,8 @@
 
 #include "rtweekend.hpp"
 
+#include "perlin.hpp"
+
 class Texture {
 public:
   virtual Color value(double u, double v, const Point3 &p) const = 0;
@@ -45,6 +47,22 @@ public:
 public:
   Texture *even;
   Texture *odd;
+};
+
+class NoiseTexture : public Texture
+{
+public:
+  NoiseTexture() {}
+  NoiseTexture(double sc) : scale(sc) {}
+
+  virtual Color value(double u, double v, const Point3& p) const override {
+    return Color(1, 1, 1) * 0.5 * (1.0 + sin(scale * p.z() + 10*noise.turb(p)));
+    //return Color(1, 1, 1) * noise.turb(scale * p);
+  }
+
+public:
+  Perlin noise;
+  double scale;
 };
 
 #endif

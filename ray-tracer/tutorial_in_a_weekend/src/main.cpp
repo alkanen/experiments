@@ -62,10 +62,12 @@ Color ray_color(const Ray &r, const Hittable &world, int depth)
   return (1.0 - t) * Color(1.0, 1.0, 1.0) + t * Color(0.5, 0.7, 1.0);
 }
 
-HittableList random_scene() {
+HittableList random_scene()
+{
   HittableList world;
 
-  auto ground_material = new Lambertian(Color(0.5, 0.5, 0.5));
+  auto checker = new CheckerTexture(Color(0.2, 0.3, 0.1), Color(0.9, 0.9, 0.9));
+  auto ground_material = new Lambertian(checker);
   auto sphere = new Sphere(Point3(0,-1000,0), 1000, ground_material);
   world.add(sphere);
 
@@ -126,6 +128,28 @@ HittableList random_scene() {
   return world;
 }
 
+HittableList two_spheres()
+{
+  HittableList objects;
+
+  auto checker = new CheckerTexture(Color(0.2, 0.3, 0.1), Color(0.9, 0.9, 0.9));
+
+  objects.add(new Sphere(Point3(0,-10, 0), 10, new Lambertian(checker)));
+  objects.add(new Sphere(Point3(0, 10, 0), 10, new Lambertian(checker)));
+
+  return objects;
+}
+
+HittableList two_perlin_spheres() {
+  HittableList objects;
+
+  auto pertext = new NoiseTexture(4);
+  objects.add(new Sphere(Point3(0, -1000, 0), 1000, new Lambertian(pertext)));
+  objects.add(new Sphere(Point3(0, 2, 0), 2, new Lambertian(pertext)));
+
+  return objects;
+}
+
 int main(int argc, char *argv[])
 {
   char *filename;
@@ -136,25 +160,50 @@ int main(int argc, char *argv[])
   }
   // Image properties
   const auto aspect_ratio = 16.0 / 9.0;
-  const int width = 400;
+  const int width = 1920/5;
   const int height = static_cast<int>(width / aspect_ratio);
   const int min_samples_per_pixel = 10;
-  const int max_samples_per_pixel = 1000;
-  const int max_depth = 50;
-  const double pincer_limit = 0.00001;
+  const int max_samples_per_pixel = 10000;
+  const int max_depth = 25;
+  const double pincer_limit = 0.001; // 0.000005;
 
-  // World
-  HittableList world = random_scene();
-
-  // Camera
+  // Camera settings
   auto look_from = Point3(13, 2, 3);
   auto look_at = Point3(0, 0, 0);
   auto vup = Vec3(0, 1, 0);
-  auto fov = 20.0;
+  auto vfov = 20.0;
   auto dist_to_focus = 10.0;
   auto aperture = .1;
 
-  Camera cam(look_from, look_at, vup, fov, aspect_ratio, aperture, dist_to_focus, 0.0, 1.0);
+  // World
+  HittableList world;
+  switch(0) {
+  case 1:
+    world = random_scene();
+    look_from = Point3(13, 2, 3);
+    look_at = Point3(0, 0, 0);
+    vfov = 20.0;
+    aperture = 0.1;
+    break;
+
+  case 2:
+    world = two_spheres();
+    look_from = Point3(13, 2, 3);
+    look_at = Point3(0, 0, 0);
+    vfov = 20.0;
+    break;
+
+  case 3:
+  default:
+    world = two_perlin_spheres();
+    look_from = Point3(13,2,3);
+    look_at = Point3(0,0,0);
+    vfov = 20.0;
+    break;
+  }
+
+  // Camera
+  Camera cam(look_from, look_at, vup, vfov, aspect_ratio, aperture, dist_to_focus, 0.0, 1.0);
 
   // Image data
   std::vector<double> data(3 * height * width);

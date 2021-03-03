@@ -9,10 +9,15 @@ HEADERS=src/camera.hpp \
         src/ray.hpp \
         src/rtweekend.hpp \
         src/sphere.hpp \
-        src/vec3.hpp
+        src/vec3.hpp \
+        src/aabb.hpp \
+        src/bvh.hpp \
+        src/moving_sphere.hpp \
+        src/perlin.hpp \
+        src/texture.hpp
 
 HEADERS_SCENE=src/image_plane.hpp \
-             src/greenmeadow.h
+              src/greenmeadow.h
 
 .PHONY: all
 all: raytracer

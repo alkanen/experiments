@@ -3,6 +3,8 @@
 
 #include "rtweekend.hpp"
 
+#include "texture.hpp"
+
 class HitRecord;
 
 class Material {
@@ -14,7 +16,8 @@ public:
 
 class Lambertian : public Material {
 public:
-  Lambertian(const Color &a) : albedo(a) {}
+  Lambertian(const Color &a) : albedo(new SolidColor(a)) {}
+  Lambertian(Texture *a) : albedo(a) {}
 
   virtual bool scatter(
     const Ray &r_in, const HitRecord &rec, Color &attenuation, Ray &scattered
@@ -26,12 +29,12 @@ public:
       scatter_direction = rec.normal;
 
     scattered = Ray(rec.p, scatter_direction, r_in.time());
-    attenuation = albedo;
+    attenuation = albedo->value(rec.u, rec.v, rec.p);
     return true;
   }
 
 public:
-  Color albedo;
+  Texture *albedo;
 };
 
 class Metal : public Material {
