@@ -9,6 +9,7 @@ HEADERS=src/camera.hpp \
         src/ray.hpp \
         src/rtweekend.hpp \
         src/sphere.hpp \
+        src/box.hpp \
         src/vec3.hpp \
         src/aabb.hpp \
         src/bvh.hpp \
@@ -25,10 +26,10 @@ HEADERS_SCENE=src/image_plane.hpp \
 all: raytracer
 
 /disk1/www/raytracer/test_scene.png: raytracer_scene
-	time ./raytracer_scene $@
+	time -p ./raytracer_scene $@
 
 %.png: raytracer
-	time ./raytracer $@
+	time -p ./raytracer $@
 
 raytracer: main.o
 	echo "[LD] $@"

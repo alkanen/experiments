@@ -183,6 +183,11 @@ HittableList cornell_box() {
   auto green = new Lambertian(Color(.12, .45, .15));
   auto light = new DiffuseLight(Color(15, 15, 15));
 
+  std::cout << "red:   " << red << std::endl;
+  std::cout << "white: " << white << std::endl;
+  std::cout << "green: " << green << std::endl;
+  std::cout << "light: " << light << std::endl;
+
   objects.add(new YzRect(0, 555, 0, 555, 555, green));
   objects.add(new YzRect(0, 555, 0, 555, 0, red));
   objects.add(new XzRect(213, 343, 227, 332, 554, light));
@@ -190,8 +195,15 @@ HittableList cornell_box() {
   objects.add(new XzRect(0, 555, 0, 555, 555, white));
   objects.add(new XyRect(0, 555, 0, 555, 555, white));
 
-  objects.add(new Box(Point3(130, 0, 65), Point3(295, 165, 230), white));
-  objects.add(new Box(Point3(265, 0, 295), Point3(430, 330, 460), white));
+  Hittable *box1 = new Box(Point3(0, 0, 0), Point3(165, 330, 165), white);
+  box1 = new RotateY(box1, 15);
+  box1 = new Translate(box1, Vec3(265, 0, 295));
+  objects.add(box1);
+
+  Hittable *box2 = new Box(Point3(0, 0, 0), Point3(165, 165, 165), white);
+  box2 = new RotateY(box2, -18);
+  box2 = new Translate(box2, Vec3(130, 0, 65));
+  objects.add(box2);
 
   return objects;
 }
@@ -208,9 +220,9 @@ int main(int argc, char *argv[])
   auto aspect_ratio = 16.0 / 9.0;
   int width = 1920/5;
   int min_samples_per_pixel = 30;
-  int max_samples_per_pixel = 500;
-  int max_depth = 25;
-  double pincer_limit = 0.001; // 0.000005;
+  int max_samples_per_pixel = 10000;
+  int max_depth = 50;
+  double pincer_limit = 0.0005; // 0.000005;
   Color background(0, 0, 0);
 
   // Camera settings
@@ -270,7 +282,7 @@ int main(int argc, char *argv[])
     world = cornell_box();
     aspect_ratio = 1.0;
     width = 600;
-    pincer_limit = 0.001;
+    // pincer_limit = 0.001;
     background = Color(0, 0, 0);
     look_from = Point3(278, 278, -800);
     look_at = Point3(278, 278, 0);
@@ -295,7 +307,7 @@ int main(int argc, char *argv[])
   int64_t sample_count = 0;
   std::mutex mutex;
   for_each(
-    std::execution::par_unseq,
+    // std::execution::par_unseq,
     scanlines.begin(),
     scanlines.end(),
     [
