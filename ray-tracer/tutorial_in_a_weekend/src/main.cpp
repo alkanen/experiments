@@ -17,8 +17,10 @@
 #include "rtweekend.hpp"
 #include "color.hpp"
 #include "hittable_list.hpp"
+#include "box.hpp"
 #include "sphere.hpp"
 #include "moving_sphere.hpp"
+#include "aarect.hpp"
 #include "camera.hpp"
 #include "material.hpp"
 
@@ -42,24 +44,24 @@ void save_png(std::vector<double> &data, const int width, const int height, cons
 }
 
 
-Color ray_color(const Ray &r, const Hittable &world, int depth)
+Color ray_color(const Ray &r, const Color &background, const Hittable &world, int depth)
 {
   HitRecord rec;
 
   if(depth <= 0)
     return Color(0, 0, 0);
 
-  if(world.hit(r, 0.001, infinity, rec)) {
-    Ray scattered;
-    Color attenuation;
-    if(rec.material->scatter(r, rec, attenuation, scattered))
-      return attenuation * ray_color(scattered, world, depth-1);
+  if(!world.hit(r, 0.001, infinity, rec))
+    return background;
 
-    return Color(0, 0, 0);
-  }
-  Vec3 unit_direction = unit_vector(r.direction());
-  auto t = 0.5 * (unit_direction.y() + 1.0);
-  return (1.0 - t) * Color(1.0, 1.0, 1.0) + t * Color(0.5, 0.7, 1.0);
+  Ray scattered;
+  Color attenuation;
+  Color emitted = rec.material->emitted(rec.u, rec.v, rec.p);
+
+  if(!rec.material->scatter(r, rec, attenuation, scattered))
+    return emitted;
+
+  return emitted + attenuation * ray_color(scattered, background, world, depth-1);
 }
 
 HittableList random_scene()
@@ -159,6 +161,41 @@ HittableList earth()
   return HittableList(globe);
 }
 
+HittableList simple_light()
+{
+  HittableList objects;
+
+  auto pertext = new NoiseTexture(4);
+  objects.add(new Sphere(Point3(0, -1000, 0), 1000, new Lambertian(pertext)));
+  objects.add(new Sphere(Point3(0, 2, 0), 2, new Lambertian(pertext)));
+
+  auto difflight = new DiffuseLight(Color(4, 4, 4));
+  objects.add(new XyRect(3, 5, 1, 3, -2, difflight));
+
+  return objects;
+}
+
+HittableList cornell_box() {
+  HittableList objects;
+
+  auto red   = new Lambertian(Color(.65, .05, .05));
+  auto white = new Lambertian(Color(.73, .73, .73));
+  auto green = new Lambertian(Color(.12, .45, .15));
+  auto light = new DiffuseLight(Color(15, 15, 15));
+
+  objects.add(new YzRect(0, 555, 0, 555, 555, green));
+  objects.add(new YzRect(0, 555, 0, 555, 0, red));
+  objects.add(new XzRect(213, 343, 227, 332, 554, light));
+  objects.add(new XzRect(0, 555, 0, 555, 0, white));
+  objects.add(new XzRect(0, 555, 0, 555, 555, white));
+  objects.add(new XyRect(0, 555, 0, 555, 555, white));
+
+  objects.add(new Box(Point3(130, 0, 65), Point3(295, 165, 230), white));
+  objects.add(new Box(Point3(265, 0, 295), Point3(430, 330, 460), white));
+
+  return objects;
+}
+
 int main(int argc, char *argv[])
 {
   char *filename;
@@ -168,13 +205,13 @@ int main(int argc, char *argv[])
     filename = const_cast<char*>("test.png");
   }
   // Image properties
-  const auto aspect_ratio = 16.0 / 9.0;
-  const int width = 1920/5;
-  const int height = static_cast<int>(width / aspect_ratio);
-  const int min_samples_per_pixel = 10;
-  const int max_samples_per_pixel = 10000;
-  const int max_depth = 25;
-  const double pincer_limit = 0.001; // 0.000005;
+  auto aspect_ratio = 16.0 / 9.0;
+  int width = 1920/5;
+  int min_samples_per_pixel = 30;
+  int max_samples_per_pixel = 500;
+  int max_depth = 25;
+  double pincer_limit = 0.001; // 0.000005;
+  Color background(0, 0, 0);
 
   // Camera settings
   auto look_from = Point3(13, 2, 3);
@@ -189,6 +226,7 @@ int main(int argc, char *argv[])
   switch(0) {
   case 1:
     world = random_scene();
+    background = Color(0.70, 0.80, 1.00);
     look_from = Point3(13, 2, 3);
     look_at = Point3(0, 0, 0);
     vfov = 20.0;
@@ -197,6 +235,7 @@ int main(int argc, char *argv[])
 
   case 2:
     world = two_spheres();
+    background = Color(0.70, 0.80, 1.00);
     look_from = Point3(13, 2, 3);
     look_at = Point3(0, 0, 0);
     vfov = 20.0;
@@ -204,21 +243,43 @@ int main(int argc, char *argv[])
 
   case 3:
     world = two_perlin_spheres();
-    look_from = Point3(13,2,3);
+    background = Color(0.70, 0.80, 1.00);
+    look_from = Point3(13, 2, 3);
     look_at = Point3(0,0,0);
     vfov = 20.0;
     break;
 
   case 4:
-  default:
     world = earth();
     look_from = Point3(13, 2, 3);
+    background = Color(0.70, 0.80, 1.00);
     look_at = Point3(0, 0, 0);
     vfov = 20.0;
+    break;
+
+  case 5:
+    world = simple_light();
+    background = Color(0, 0, 0);
+    look_from = Point3(26, 3, 6);
+    look_at = Point3(0, 2, 0);
+    vfov = 20.0;
+    break;
+
+  default:
+  case 6:
+    world = cornell_box();
+    aspect_ratio = 1.0;
+    width = 600;
+    pincer_limit = 0.001;
+    background = Color(0, 0, 0);
+    look_from = Point3(278, 278, -800);
+    look_at = Point3(278, 278, 0);
+    vfov = 40.0;
     break;
   }
 
   // Camera
+  int height = static_cast<int>(width / aspect_ratio);
   Camera cam(look_from, look_at, vup, vfov, aspect_ratio, aperture, dist_to_focus, 0.0, 1.0);
 
   // Image data
@@ -230,8 +291,8 @@ int main(int argc, char *argv[])
 
   // Render
   std::cerr << "Begin" << std::endl;
-  auto line_count = 0;
-  auto sample_count = 0;
+  int64_t line_count = 0;
+  int64_t sample_count = 0;
   std::mutex mutex;
   for_each(
     std::execution::par_unseq,
@@ -249,19 +310,20 @@ int main(int argc, char *argv[])
       &max_samples_per_pixel,
       &line_count,
       &sample_count,
-      &mutex
+      &mutex,
+      &background
     ] (auto &&j) {
-      auto line_sample_count = 0;
+      int64_t line_sample_count = 0;
       for (int i = 0; i < width; ++i) {
         Color c1(0, 0, 0), c2(0, 0, 0);
-        auto count = 0;
+        int64_t count = 0;
         for(int s = 0; s < min_samples_per_pixel / 2; s++) {
           auto u = (i + random_double()) / (width - 1);
           auto v = (j + random_double()) / (height - 1);
 
           // Ray calculation contains some randomness
-          c1 += ray_color(cam.get_ray(u, v), world, max_depth);
-          c2 += ray_color(cam.get_ray(u, v), world, max_depth);
+          c1 += ray_color(cam.get_ray(u, v), background, world, max_depth);
+          c2 += ray_color(cam.get_ray(u, v), background, world, max_depth);
           count += 2;
         }
 
@@ -273,8 +335,8 @@ int main(int argc, char *argv[])
           // Ray r = cam.get_ray(u, v);
           // pixel_color += ray_color(r, world, max_depth);
           // Ray calculation contains some randomness
-          c1 += ray_color(cam.get_ray(u, v), world, max_depth);
-          c2 += ray_color(cam.get_ray(u, v), world, max_depth);
+          c1 += ray_color(cam.get_ray(u, v), background, world, max_depth);
+          c2 += ray_color(cam.get_ray(u, v), background, world, max_depth);
           count += 2;
 
           //if((c1 - c2).length() / (c1+c2).length() < pincer_limit)

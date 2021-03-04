@@ -15,7 +15,8 @@ HEADERS=src/camera.hpp \
         src/moving_sphere.hpp \
         src/perlin.hpp \
         src/texture.hpp \
-        src/rtw_stb_image.hpp
+        src/rtw_stb_image.hpp \
+        src/aarect.hpp
 
 HEADERS_SCENE=src/image_plane.hpp \
               src/greenmeadow.h
