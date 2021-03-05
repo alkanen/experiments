@@ -105,7 +105,7 @@ public:
   DiffuseLight(Color c) : emit(new SolidColor(c)) {}
 
   virtual bool scatter(
-    const Ray &r_in, const HitRecord &rec, Color &attenuation, Ray &scattered
+    const Ray &ray_in, const HitRecord &rec, Color &attenuation, Ray &scattered
   ) const override {
     return false;
   }
@@ -117,6 +117,24 @@ public:
 
 public:
   Texture *emit;
+};
+
+class Isotropic : public Material
+{
+public:
+  Isotropic(Color c) : albedo(new SolidColor(c)) {}
+  Isotropic(Texture *a) : albedo(a) {}
+
+  virtual bool scatter(
+    const Ray &ray_in, const HitRecord &rec, Color &attenuation, Ray &scattered
+  ) const override {
+    scattered = Ray(rec.p, random_in_unit_sphere(), ray_in.time());
+    attenuation = albedo->value(rec.u, rec.v, rec.p);
+    return true;
+  }
+
+public:
+  Texture *albedo;
 };
 
 #endif

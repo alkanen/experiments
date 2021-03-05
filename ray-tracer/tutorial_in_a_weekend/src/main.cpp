@@ -23,6 +23,7 @@
 #include "aarect.hpp"
 #include "camera.hpp"
 #include "material.hpp"
+#include "constant_medium.hpp"
 
 void save_png(std::vector<double> &data, const int width, const int height, const char *filename)
 {
@@ -208,6 +209,35 @@ HittableList cornell_box() {
   return objects;
 }
 
+HittableList cornell_smoke() {
+  HittableList objects;
+
+  auto red   = new Lambertian(Color(.65, .05, .05));
+  auto white = new Lambertian(Color(.73, .73, .73));
+  auto green = new Lambertian(Color(.12, .45, .15));
+  auto light = new DiffuseLight(Color(7, 7, 7));
+
+  objects.add(new YzRect(0, 555, 0, 555, 555, green));
+  objects.add(new YzRect(0, 555, 0, 555, 0, red));
+  objects.add(new XzRect(113, 443, 127, 432, 554, light));
+  objects.add(new XzRect(0, 555, 0, 555, 555, white));
+  objects.add(new XzRect(0, 555, 0, 555, 0, white));
+  objects.add(new XyRect(0, 555, 0, 555, 555, white));
+
+  Hittable *box1 = new Box(Point3(0, 0, 0), Point3(165, 330, 165), white);
+  box1 = new RotateY(box1, 15);
+  box1 = new Translate(box1, Vec3(265, 0, 295));
+
+  Hittable *box2 = new Box(Point3(0, 0, 0), Point3(165, 165, 165), white);
+  box2 = new RotateY(box2, -18);
+  box2 = new Translate(box2, Vec3(130, 0, 65));
+
+  objects.add(new ConstantMedium(box1, 0.01, Color(0, 0, 0)));
+  objects.add(new ConstantMedium(box2, 0.01, Color(1, 1, 1)));
+
+  return objects;
+}
+
 int main(int argc, char *argv[])
 {
   char *filename;
@@ -219,10 +249,10 @@ int main(int argc, char *argv[])
   // Image properties
   auto aspect_ratio = 16.0 / 9.0;
   int width = 1920/5;
-  int min_samples_per_pixel = 30;
-  int max_samples_per_pixel = 10000;
+  int min_samples_per_pixel = 100;
+  int max_samples_per_pixel = 100000;
   int max_depth = 50;
-  double pincer_limit = 0.0005; // 0.000005;
+  double pincer_limit = 0.00001; // 0.000005;
   Color background(0, 0, 0);
 
   // Camera settings
@@ -277,13 +307,23 @@ int main(int argc, char *argv[])
     vfov = 20.0;
     break;
 
-  default:
   case 6:
     world = cornell_box();
     aspect_ratio = 1.0;
     width = 600;
     // pincer_limit = 0.001;
     background = Color(0, 0, 0);
+    look_from = Point3(278, 278, -800);
+    look_at = Point3(278, 278, 0);
+    vfov = 40.0;
+    break;
+
+  default:
+  case 7:
+    world = cornell_smoke();
+    aspect_ratio = 1.0;
+    width = 600;
+    max_samples_per_pixel = 200;
     look_from = Point3(278, 278, -800);
     look_at = Point3(278, 278, 0);
     vfov = 40.0;
