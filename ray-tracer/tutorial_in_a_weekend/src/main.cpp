@@ -183,7 +183,8 @@ HittableList cornell_box() {
   auto red   = new Lambertian(Color(.65, .05, .05));
   auto white = new Lambertian(Color(.73, .73, .73));
   auto green = new Lambertian(Color(.12, .45, .15));
-  auto light = new DiffuseLight(Color(15, 15, 15));
+  // auto light = new DiffuseLight(Color(15, 15, 15));
+  auto light = new DiffuseLight(Color(7, 7, 7));
 
   std::cout << "red:   " << red << std::endl;
   std::cout << "white: " << white << std::endl;
@@ -192,7 +193,8 @@ HittableList cornell_box() {
 
   objects.add(new YzRect(0, 555, 0, 555, 555, green));
   objects.add(new YzRect(0, 555, 0, 555, 0, red));
-  objects.add(new XzRect(213, 343, 227, 332, 554, light));
+  // objects.add(new XzRect(213, 343, 227, 332, 554, light));
+  objects.add(new XzRect(113, 443, 127, 432, 554, light));
   objects.add(new XzRect(0, 555, 0, 555, 0, white));
   objects.add(new XzRect(0, 555, 0, 555, 555, white));
   objects.add(new XyRect(0, 555, 0, 555, 555, white));
@@ -322,6 +324,7 @@ int main(int argc, char *argv[])
   int max_depth = 50;
   double pincer_limit = 0.00001; // 0.000005;
   Color background(0, 0, 0);
+  double sample_clamp = 2;
 
   // Camera settings
   auto look_from = Point3(13, 2, 3);
@@ -379,11 +382,12 @@ int main(int argc, char *argv[])
     world = cornell_box();
     aspect_ratio = 1.0;
     width = 600;
-    // pincer_limit = 0.001;
+    max_depth = 3;
     background = Color(0, 0, 0);
     look_from = Point3(278, 278, -800);
     look_at = Point3(278, 278, 0);
     vfov = 40.0;
+    dist_to_focus = 400;
     break;
 
   case 7:
@@ -424,9 +428,10 @@ int main(int argc, char *argv[])
   std::cerr << "Begin" << std::endl;
   int64_t line_count = 0;
   int64_t sample_count = 0;
+  int64_t next_save = height / 10;
   std::mutex mutex;
   for_each(
-    // std::execution::par_unseq,
+    std::execution::par_unseq,
     scanlines.begin(),
     scanlines.end(),
     [
@@ -441,8 +446,11 @@ int main(int argc, char *argv[])
       &max_samples_per_pixel,
       &line_count,
       &sample_count,
+      &next_save,
       &mutex,
-      &background
+      &background,
+      &filename,
+      &sample_clamp
     ] (auto &&j) {
       int64_t line_sample_count = 0;
       for (int i = 0; i < width; ++i) {
@@ -453,8 +461,8 @@ int main(int argc, char *argv[])
           auto v = (j + random_double()) / (height - 1);
 
           // Ray calculation contains some randomness
-          c1 += ray_color(cam.get_ray(u, v), background, world, max_depth);
-          c2 += ray_color(cam.get_ray(u, v), background, world, max_depth);
+          c1 += clamp_color(ray_color(cam.get_ray(u, v), background, world, max_depth), sample_clamp);
+          c2 += clamp_color(ray_color(cam.get_ray(u, v), background, world, max_depth), sample_clamp);
           count += 2;
         }
 
@@ -466,11 +474,10 @@ int main(int argc, char *argv[])
           // Ray r = cam.get_ray(u, v);
           // pixel_color += ray_color(r, world, max_depth);
           // Ray calculation contains some randomness
-          c1 += ray_color(cam.get_ray(u, v), background, world, max_depth);
-          c2 += ray_color(cam.get_ray(u, v), background, world, max_depth);
+          c1 += clamp_color(ray_color(cam.get_ray(u, v), background, world, max_depth), sample_clamp);
+          c2 += clamp_color(ray_color(cam.get_ray(u, v), background, world, max_depth), sample_clamp);
           count += 2;
 
-          //if((c1 - c2).length() / (c1+c2).length() < pincer_limit)
           auto dist = fabs((c1.x() - c2.x()) + (c1.y() - c2.y()) + (c1.z() - c2.z()));
           auto total = (c1.x() + c2.x()) + (c1.y() + c2.y()) + (c1.z() + c2.z());
           if(dist / total < pincer_limit)
@@ -488,6 +495,10 @@ int main(int argc, char *argv[])
         ++line_count;
         sample_count += line_sample_count;
         std::cerr << "\rScanline " << line_count << "/" << height << std::flush;
+        if (line_count > next_save) {
+          save_png(data, width, height, filename);
+          next_save += height / 10;
+        }
       }
     }
   );
