@@ -17,6 +17,7 @@
 #include "rtweekend.hpp"
 #include "color.hpp"
 #include "hittable_list.hpp"
+#include "bvh.hpp"
 #include "box.hpp"
 #include "sphere.hpp"
 #include "moving_sphere.hpp"
@@ -238,6 +239,73 @@ HittableList cornell_smoke() {
   return objects;
 }
 
+HittableList final_scene() {
+  HittableList boxes1;
+  auto ground = new Lambertian(Color(0.48, 0.83, 0.53));
+
+  const int boxes_per_side = 20;
+  for (int i = 0; i < boxes_per_side; i++) {
+    for (int j = 0; j < boxes_per_side; j++) {
+      auto w = 100.0;
+      auto x0 = -1000.0 + i*w;
+      auto z0 = -1000.0 + j*w;
+      auto y0 = 0.0;
+      auto x1 = x0 + w;
+      auto y1 = random_double(1,101);
+      auto z1 = z0 + w;
+
+      boxes1.add(new Box(Point3(x0, y0, z0), Point3(x1, y1, z1), ground));
+    }
+  }
+
+  HittableList objects;
+
+  objects.add(new BvhNode(boxes1, 0, 1));
+
+  auto light = new DiffuseLight(Color(7, 7, 7));
+  objects.add(new XzRect(123, 423, 147, 412, 554, light));
+
+  auto center1 = Point3(400, 400, 200);
+  auto center2 = center1 + Vec3(30,0,0);
+  auto moving_sphere_material = new Lambertian(Color(0.7, 0.3, 0.1));
+  objects.add(new MovingSphere(center1, center2, 0, 1, 50, moving_sphere_material));
+
+  objects.add(new Sphere(Point3(260, 150, 45), 50, new Dielectric(1.5)));
+  objects.add(new Sphere(
+    Point3(0, 150, 145), 50, new Metal(Color(0.8, 0.8, 0.9), 1.0)
+  ));
+
+  auto boundary = new Sphere(Point3(360,150,145), 70, new Dielectric(1.5));
+  objects.add(boundary);
+  objects.add(new ConstantMedium(boundary, 0.2, Color(0.2, 0.4, 0.9)));
+  boundary = new Sphere(Point3(0, 0, 0), 5000, new Dielectric(1.5));
+  objects.add(new ConstantMedium(boundary, .0001, Color(1, 1, 1)));
+
+  auto emat = new Lambertian(new ImageTexture("earthmap.jpg"));
+  objects.add(new Sphere(Point3(400, 200, 400), 100, emat));
+  auto pertext = new NoiseTexture(0.1);
+  objects.add(new Sphere(Point3(220, 280, 300), 80, new Lambertian(pertext)));
+
+  HittableList boxes2;
+  auto white = new Lambertian(Color(.73, .73, .73));
+  int ns = 1000;
+  for (int j = 0; j < ns; j++) {
+    boxes2.add(new Sphere(Point3::random(0,165), 10, white));
+  }
+
+  objects.add(
+    new Translate(
+      new RotateY(
+        new BvhNode(boxes2, 0.0, 1.0),
+        15
+      ),
+      Vec3(-100,270,395)
+    )
+  );
+
+  return objects;
+}
+
 int main(int argc, char *argv[])
 {
   char *filename;
@@ -318,13 +386,24 @@ int main(int argc, char *argv[])
     vfov = 40.0;
     break;
 
-  default:
   case 7:
     world = cornell_smoke();
     aspect_ratio = 1.0;
     width = 600;
     max_samples_per_pixel = 200;
     look_from = Point3(278, 278, -800);
+    look_at = Point3(278, 278, 0);
+    vfov = 40.0;
+    break;
+
+  default:
+  case 8:
+    world = final_scene();
+    aspect_ratio = 1.0;
+    width = 80;
+    max_samples_per_pixel = 10000;
+    background = Color(0, 0, 0);
+    look_from = Point3(478, 278, -600);
     look_at = Point3(278, 278, 0);
     vfov = 40.0;
     break;
