@@ -26,6 +26,8 @@
 #include "material.hpp"
 #include "constant_medium.hpp"
 
+#undef SAMPLE_CLAMP
+
 void save_png(std::vector<double> &data, const int width, const int height, const char *filename)
 {
   int y, x;
@@ -35,9 +37,9 @@ void save_png(std::vector<double> &data, const int width, const int height, cons
   pixels = new uint8_t[data.size()];
   for(y=0; y<height; y++) {
     for(x=0; x<pitch-3; x+=3) {
-      pixels[y * pitch + x + 0] = static_cast<int>(256 * clamp(sqrt(data[y * pitch + x + 0]), 0.0, 0.999));;
-      pixels[y * pitch + x + 1] = static_cast<int>(256 * clamp(sqrt(data[y * pitch + x + 1]), 0.0, 0.999));;
-      pixels[y * pitch + x + 2] = static_cast<int>(256 * clamp(sqrt(data[y * pitch + x + 2]), 0.0, 0.999));;
+      pixels[y * pitch + x + 0] = static_cast<int>(256 * clamp(sqrt(data[y * pitch + x + 0]), 0.0, 0.999));
+      pixels[y * pitch + x + 1] = static_cast<int>(256 * clamp(sqrt(data[y * pitch + x + 1]), 0.0, 0.999));
+      pixels[y * pitch + x + 2] = static_cast<int>(256 * clamp(sqrt(data[y * pitch + x + 2]), 0.0, 0.999));
     }
   }
 
@@ -318,8 +320,8 @@ int main(int argc, char *argv[])
   auto aspect_ratio = 16.0 / 9.0;
   int width = 1920/5;
   int min_samples_per_pixel = 100;
-  int max_samples_per_pixel = 100000;
-  int max_depth = 50;
+  int max_samples_per_pixel = 100000000;
+  int max_depth = 25;
   double pincer_limit = 0.00001; // 0.000005;
   Color background(0, 0, 0);
 
@@ -405,6 +407,7 @@ int main(int argc, char *argv[])
     background = Color(0, 0, 0);
     look_from = Point3(478, 278, -600);
     look_at = Point3(278, 278, 0);
+    dist_to_focus = (look_at - look_from).length();
     vfov = 40.0;
     break;
   }
@@ -424,6 +427,7 @@ int main(int argc, char *argv[])
   std::cerr << "Begin" << std::endl;
   int64_t line_count = 0;
   int64_t sample_count = 0;
+  int64_t samples_reached_max = 0;
   std::mutex mutex;
   for_each(
     // std::execution::par_unseq,
@@ -442,10 +446,14 @@ int main(int argc, char *argv[])
       &line_count,
       &sample_count,
       &mutex,
-      &background
+      &background,
+      &samples_reached_max
     ] (auto &&j) {
       int64_t line_sample_count = 0;
+      int64_t local_reached_max = 0;
       for (int i = 0; i < width; ++i) {
+        // Pre-emptively increase max counter
+        local_reached_max++;
         Color c1(0, 0, 0), c2(0, 0, 0);
         int64_t count = 0;
         for(int s = 0; s < min_samples_per_pixel / 2; s++) {
@@ -453,8 +461,13 @@ int main(int argc, char *argv[])
           auto v = (j + random_double()) / (height - 1);
 
           // Ray calculation contains some randomness
+#ifdef SAMPLE_CLAMP
+          c1 += clamp_color(ray_color(cam.get_ray(u, v), background, world, max_depth), SAMPLE_CLAMP);
+          c2 += clamp_color(ray_color(cam.get_ray(u, v), background, world, max_depth), SAMPLE_CLAMP);
+#else
           c1 += ray_color(cam.get_ray(u, v), background, world, max_depth);
           c2 += ray_color(cam.get_ray(u, v), background, world, max_depth);
+#endif
           count += 2;
         }
 
@@ -466,15 +479,23 @@ int main(int argc, char *argv[])
           // Ray r = cam.get_ray(u, v);
           // pixel_color += ray_color(r, world, max_depth);
           // Ray calculation contains some randomness
+#ifdef SAMPLE_CLAMP
+          c1 += clamp_color(ray_color(cam.get_ray(u, v), background, world, max_depth), SAMPLE_CLAMP);
+          c2 += clamp_color(ray_color(cam.get_ray(u, v), background, world, max_depth), SAMPLE_CLAMP);
+#else
           c1 += ray_color(cam.get_ray(u, v), background, world, max_depth);
           c2 += ray_color(cam.get_ray(u, v), background, world, max_depth);
+#endif
           count += 2;
 
           //if((c1 - c2).length() / (c1+c2).length() < pincer_limit)
           auto dist = fabs((c1.x() - c2.x()) + (c1.y() - c2.y()) + (c1.z() - c2.z()));
           auto total = (c1.x() + c2.x()) + (c1.y() + c2.y()) + (c1.z() + c2.z());
-          if(dist / total < pincer_limit)
+          if(dist / total < pincer_limit) {
+            // Restore max counter
+            local_reached_max--;
             break;
+          }
         }
 
         line_sample_count += count;
@@ -488,6 +509,17 @@ int main(int argc, char *argv[])
         ++line_count;
         sample_count += line_sample_count;
         std::cerr << "\rScanline " << line_count << "/" << height << std::flush;
+        samples_reached_max += local_reached_max;
+        std::cerr << "\rScanline "
+                  << line_count
+                  << "/"
+                  << height
+                  << " "
+                  << samples_reached_max
+                  << " ceilings hit and "
+                  << ((double)sample_count / (width * line_count))
+                  << " samples per pixel"
+                  << std::flush;
       }
     }
   );
