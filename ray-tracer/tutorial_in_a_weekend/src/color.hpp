@@ -7,6 +7,15 @@
 
 using Color = Vec3;    // RGB color
 
+Color clamp_color(const Color& color, double maxval)
+{
+  auto ratio = maxval / color.length();
+  if (ratio >= 1)
+    return color;
+
+  return color * ratio;
+}
+
 void write_color(std::ostream &out, Color pixel_color, int samples_per_pixel) {
   auto r = pixel_color.x();
   auto g = pixel_color.y();
