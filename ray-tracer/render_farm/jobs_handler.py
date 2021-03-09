@@ -25,9 +25,9 @@ class JobsHandler:
         textures: dict,
         materials: dict,
         objects: dict,
-        variance_limit=1e-5,
-        section_height=100,
-        section_width=100,
+        variance_limit=1e-3,
+        section_height=3,
+        section_width=3,
     ):
         # Default number of samples to request
         self.num_samples = num_samples
@@ -54,27 +54,39 @@ class JobsHandler:
         width = image["width"]
         height = image["height"]
 
-        # Default to having one job section per scanline for now
-        self.unfinished = [
-            {
-                "y0": y,
-                "x0": x,
-                "y1": min(y + section_height + 1, height),
-                "x1": min(x + section_width + 1, width),
-            }
-            for y in range(0, height - section_height, section_height)
-            for x in range(0, width - section_width, section_width)
-        ]
-        self.rendering = {}
-        self.dormant = []
-        self.done = []
-
         self.files = {
             "samples_odd": Path(folder) / "samples_odd.npy",
             "samples_even": Path(folder) / "samples_even.npy",
             "heatmap": Path(folder) / "heatmap.npy",
+            "status": Path(folder) / "status.json",
         }
 
+        # Rendering meta data
+        try:
+            with open(self.files["status"], "r") as f:
+                tmp = json.load(f)
+                self.unfinished = tmp["unfinished"]
+                self.dormant = tmp["dormant"]
+                self.done = tmp["done"]
+                self.rendering = {}
+
+        except FileNotFoundError:
+            # Default to having one job section per scanline for now
+            self.unfinished = [
+                {
+                    "y0": y,
+                    "x0": x,
+                    "y1": min(y + section_height, height),
+                    "x1": min(x + section_width, width),
+                }
+                for y in range(0, height - section_height, section_height)
+                for x in range(0, width - section_width, section_width)
+            ]
+            self.dormant = []
+            self.done = []
+            self.rendering = {}
+
+        # Samples and related data
         self.data = {}
         try:
             self.data["samples_odd"] = np.load(self.files["samples_odd"])
@@ -93,6 +105,21 @@ class JobsHandler:
 
         self.last_save_time = datetime.now()
         self.last_save_counter = 10
+
+    def save_status(self):
+        with open(self.files["status"], "w") as f:
+            json.dump(
+                {
+                    "dormant": self.dormant,
+                    "done": self.done,
+                    "unfinished": [
+                        *self.unfinished,
+                        *[self.rendering[key]["section"] for key in self.rendering],
+                    ],
+                },
+                f,
+                indent=4,
+            )
 
     def get_status(self):
         return {
@@ -118,7 +145,10 @@ class JobsHandler:
             self.dormant = []
 
         if len(self.unfinished) == 0:
-            return None
+            if len(self.rendering):
+                return {"status": "paused"}
+            else:
+                return {"status": "done"}
 
         index = randint(0, len(self.unfinished) - 1)
         tmp = self.unfinished[index]
@@ -142,6 +172,7 @@ class JobsHandler:
         }
 
         return {
+            "status": "rendering",
             "scene": self.scene_hash,
             "reference": reference,
             "samples": self.num_samples,
@@ -208,12 +239,13 @@ class JobsHandler:
             self.last_save_counter <= 0
             or (datetime.now() - self.last_save_time).total_seconds() > 600
         ):
-            self.last_save_counter = 100
+            self.last_save_counter = 10
             self.last_save_time = datetime.now()
 
             np.save(self.files["samples_odd"], self.data["samples_odd"])
             np.save(self.files["samples_even"], self.data["samples_even"])
             np.save(self.files["heatmap"], self.data["heatmap"])
+            self.save_status()
 
         return "OK"
 
@@ -242,7 +274,8 @@ class JobsHandler:
                 casting="unsafe",
             )
         else:
-            data = self.data["heatmap"]
+            # data = np.log(self.data["heatmap"] + 1e-9)
+            data = np.sqrt(self.data["heatmap"] + 1e-9)
 
         maxval = np.max(data)
         minval = np.min(data)
