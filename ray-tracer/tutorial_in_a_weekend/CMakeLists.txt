@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.5)
 
+if(UNIX AND NOT APPLE)
+  set(LINUX TRUE)
+endif()
+
 set(CMAKE_CXX_COMPILER g++-10)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -29,5 +33,7 @@ add_executable(raytracer
 )
 
 # Link against the dependency of Intel TBB (for parallel C++17 algorithms)
-# target_link_libraries(raytracer tbb)
+if(LINUX)
+  target_link_libraries(raytracer tbb)
+endif()
 
