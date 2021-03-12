@@ -59,12 +59,29 @@ Color ray_color(const Ray &r, const Color &background, const Hittable &world, in
     return background;
 
   Ray scattered;
+  Color attenuation;
   Color emitted = rec.material->emitted(rec.u, rec.v, rec.p);
   double pdf;
   Color albedo;
 
   if(!rec.material->scatter(r, rec, albedo, scattered, pdf))
     return emitted;
+
+  auto on_light = Point3(random_double(213, 343), 554, random_double(227, 332));
+  auto to_light = on_light - rec.p;
+  auto distance_squared = to_light.length_squared();
+  to_light = unit_vector(to_light);
+
+  if(dot(to_light, rec.normal) < 0)
+    return emitted;
+
+  double light_area = (343 - 213) * (332 - 227);
+  auto light_cosine = fabs(to_light.y());
+  if(light_cosine < 0.000001)
+    return emitted;
+
+  pdf = distance_squared / (light_cosine * light_area);
+  scattered = Ray(rec.p, to_light, r.time());
 
   return emitted
     + albedo
@@ -425,8 +442,8 @@ int main(int argc, char *argv[])
     aspect_ratio = 1.0;
     width = 600;
     max_depth = 50;
-    min_samples_per_pixel = 100;
-    max_samples_per_pixel = 100;
+    min_samples_per_pixel = 10;
+    max_samples_per_pixel = 10;
     background = Color(0, 0, 0);
     look_from = Point3(278, 278, -800);
     look_at = Point3(278, 278, 0);
