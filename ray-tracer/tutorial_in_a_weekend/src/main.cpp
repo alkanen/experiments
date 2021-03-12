@@ -25,6 +25,7 @@
 #include "camera.hpp"
 #include "material.hpp"
 #include "constant_medium.hpp"
+#include "pdf.hpp"
 
 #undef SAMPLE_CLAMP
 
@@ -48,7 +49,7 @@ void save_png(std::vector<double> &data, const int width, const int height, cons
 }
 
 
-Color ray_color(const Ray &r, const Color &background, const Hittable &world, int depth)
+Color ray_color(const Ray &r, const Color &background, const Hittable &world, Hittable *lights, int depth)
 {
   HitRecord rec;
 
@@ -67,26 +68,14 @@ Color ray_color(const Ray &r, const Color &background, const Hittable &world, in
   if(!rec.material->scatter(r, rec, albedo, scattered, pdf))
     return emitted;
 
-  auto on_light = Point3(random_double(213, 343), 554, random_double(227, 332));
-  auto to_light = on_light - rec.p;
-  auto distance_squared = to_light.length_squared();
-  to_light = unit_vector(to_light);
-
-  if(dot(to_light, rec.normal) < 0)
-    return emitted;
-
-  double light_area = (343 - 213) * (332 - 227);
-  auto light_cosine = fabs(to_light.y());
-  if(light_cosine < 0.000001)
-    return emitted;
-
-  pdf = distance_squared / (light_cosine * light_area);
-  scattered = Ray(rec.p, to_light, r.time());
+  HittablePdf light_pdf(lights, rec.p);
+  scattered = Ray(rec.p, light_pdf.generate(), r.time());
+  pdf = light_pdf.value(scattered.direction());
 
   return emitted
     + albedo
     * rec.material->scattering_pdf(r, rec, scattered) / pdf
-    * ray_color(scattered, background, world, depth-1);
+    * ray_color(scattered, background, world, lights, depth-1);
 }
 
 HittableList random_scene()
@@ -215,7 +204,7 @@ HittableList cornell_box() {
 
   objects.add(new YzRect(0, 555, 0, 555, 555, green));
   objects.add(new YzRect(0, 555, 0, 555, 0, red));
-  objects.add(new FlipFace(new XzRect(213, 343, 227, 332, 554, light)));
+  //objects.add(new FlipFace(new XzRect(213, 343, 227, 332, 554, light)));
   objects.add(new XzRect(0, 555, 0, 555, 0, white));
   objects.add(new XzRect(0, 555, 0, 555, 555, white));
   objects.add(new XyRect(0, 555, 0, 555, 555, white));
@@ -359,6 +348,8 @@ int main(int argc, char *argv[])
 
   // World
   HittableList world;
+  Hittable *lights;
+
   switch(0) {
   case 1:
     world = random_scene();
@@ -438,6 +429,7 @@ int main(int argc, char *argv[])
   default:
   case 9:
     world = cornell_box();
+    lights = new XzRect(213, 343, 227, 332, 554, new Material());
 
     aspect_ratio = 1.0;
     width = 600;
@@ -484,6 +476,7 @@ int main(int argc, char *argv[])
       &data,
       &cam,
       &world,
+      &lights,
       &max_depth,
       &pincer_limit,
       &min_samples_per_pixel,
@@ -510,11 +503,11 @@ int main(int argc, char *argv[])
 
           // Ray calculation contains some randomness
 #ifdef SAMPLE_CLAMP
-          c1 += clamp_color(ray_color(cam.get_ray(u, v), background, world, max_depth), SAMPLE_CLAMP);
-          c2 += clamp_color(ray_color(cam.get_ray(u, v), background, world, max_depth), SAMPLE_CLAMP);
+          c1 += clamp_color(ray_color(cam.get_ray(u, v), background, world, lights, max_depth), SAMPLE_CLAMP);
+          c2 += clamp_color(ray_color(cam.get_ray(u, v), background, world, lights, max_depth), SAMPLE_CLAMP);
 #else
-          c1 += ray_color(cam.get_ray(u, v), background, world, max_depth);
-          c2 += ray_color(cam.get_ray(u, v), background, world, max_depth);
+          c1 += ray_color(cam.get_ray(u, v), background, world, lights, max_depth);
+          c2 += ray_color(cam.get_ray(u, v), background, world, lights, max_depth);
 #endif
           count += 2;
         }
@@ -525,14 +518,14 @@ int main(int argc, char *argv[])
           auto v = (j + random_double()) / (height - 1);
 
           // Ray r = cam.get_ray(u, v);
-          // pixel_color += ray_color(r, world, max_depth);
+          // pixel_color += ray_color(r, world, lights, max_depth);
           // Ray calculation contains some randomness
 #ifdef SAMPLE_CLAMP
-          c1 += clamp_color(ray_color(cam.get_ray(u, v), background, world, max_depth), SAMPLE_CLAMP);
-          c2 += clamp_color(ray_color(cam.get_ray(u, v), background, world, max_depth), SAMPLE_CLAMP);
+          c1 += clamp_color(ray_color(cam.get_ray(u, v), background, world, lights, max_depth), SAMPLE_CLAMP);
+          c2 += clamp_color(ray_color(cam.get_ray(u, v), background, world, lights, max_depth), SAMPLE_CLAMP);
 #else
-          c1 += ray_color(cam.get_ray(u, v), background, world, max_depth);
-          c2 += ray_color(cam.get_ray(u, v), background, world, max_depth);
+          c1 += ray_color(cam.get_ray(u, v), background, world, lights, max_depth);
+          c2 += ray_color(cam.get_ray(u, v), background, world, lights, max_depth);
 #endif
           count += 2;
 

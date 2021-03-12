@@ -71,6 +71,24 @@ public:
     return true;
   }
 
+  virtual double pdf_value(const Point3 &o, const Vec3 &v) const
+  {
+    HitRecord rec;
+    if(this->hit(Ray(o, v), 0.001, infinity, rec))
+      return 0;
+
+    auto area = (x1 - x0) * (z1 - z0);
+    auto distance_squared = rec.t * rec.t * v.length_squared();
+    auto cosine = fabs(dot(v, rec.normal) / v.length());
+
+    return distance_squared / (cosine * area);
+  }
+
+  virtual Vec3 random(const Vec3 &o) const {
+    auto random_point = Point3(random_double(x0, x1), k, random_double(z0, z1));
+    return random_point - o;
+  }
+
 public:
   double x0, x1, z0, z1, k;
   Material *material;
