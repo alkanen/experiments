@@ -4,6 +4,7 @@
 #include "rtweekend.hpp"
 
 #include "texture.hpp"
+#include "onb.hpp"
 
 class HitRecord;
 
@@ -34,7 +35,9 @@ public:
     const Ray &r_in, const HitRecord &rec, Color &alb, Ray &scattered, double &pdf
   ) const override
   {
-    auto scatter_direction = random_in_hemisphere(rec.normal);
+    Onb uvw;
+    uvw.build_from_w(rec.normal);
+    auto scatter_direction = uvw.local(random_cosine_direction());
 
     // Catch degenerate scatter direction
     if (scatter_direction.near_zero())
@@ -42,7 +45,7 @@ public:
 
     scattered = Ray(rec.p, unit_vector(scatter_direction), r_in.time());
     alb = albedo->value(rec.u, rec.v, rec.p);
-    pdf = 0.5 / pi;
+    pdf = dot(uvw.w(), scattered.direction()) / pi;
 
     return true;
   }

@@ -30,6 +30,7 @@ add_executable(raytracer
   src/sphere.hpp
   src/texture.hpp
   src/vec3.hpp
+  src/onb.hpp
 )
 
 # Link against the dependency of Intel TBB (for parallel C++17 algorithms)
