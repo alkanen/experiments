@@ -59,13 +59,17 @@ Color ray_color(const Ray &r, const Color &background, const Hittable &world, in
     return background;
 
   Ray scattered;
-  Color attenuation;
   Color emitted = rec.material->emitted(rec.u, rec.v, rec.p);
+  double pdf;
+  Color albedo;
 
-  if(!rec.material->scatter(r, rec, attenuation, scattered))
+  if(!rec.material->scatter(r, rec, albedo, scattered, pdf))
     return emitted;
 
-  return emitted + attenuation * ray_color(scattered, background, world, depth-1);
+  return emitted
+    + albedo
+    * rec.material->scattering_pdf(r, rec, scattered) / pdf
+    * ray_color(scattered, background, world, depth-1);
 }
 
 HittableList random_scene()
@@ -185,8 +189,7 @@ HittableList cornell_box() {
   auto red   = new Lambertian(Color(.65, .05, .05));
   auto white = new Lambertian(Color(.73, .73, .73));
   auto green = new Lambertian(Color(.12, .45, .15));
-  // auto light = new DiffuseLight(Color(15, 15, 15));
-  auto light = new DiffuseLight(Color(7, 7, 7));
+  auto light = new DiffuseLight(Color(15, 15, 15));
 
   std::cout << "red:   " << red << std::endl;
   std::cout << "white: " << white << std::endl;
@@ -195,8 +198,7 @@ HittableList cornell_box() {
 
   objects.add(new YzRect(0, 555, 0, 555, 555, green));
   objects.add(new YzRect(0, 555, 0, 555, 0, red));
-  // objects.add(new XzRect(213, 343, 227, 332, 554, light));
-  objects.add(new XzRect(113, 443, 127, 432, 554, light));
+  objects.add(new XzRect(213, 343, 227, 332, 554, light));
   objects.add(new XzRect(0, 555, 0, 555, 0, white));
   objects.add(new XzRect(0, 555, 0, 555, 555, white));
   objects.add(new XyRect(0, 555, 0, 555, 555, white));
@@ -335,6 +337,8 @@ int main(int argc, char *argv[])
   auto vfov = 20.0;
   auto dist_to_focus = 10.0;
   auto aperture = .1;
+  auto time0 = 0.0;
+  auto time1 = 1.0;
 
   // World
   HittableList world;
@@ -402,7 +406,6 @@ int main(int argc, char *argv[])
     vfov = 40.0;
     break;
 
-  default:
   case 8:
     world = final_scene();
     aspect_ratio = 1.0;
@@ -414,11 +417,31 @@ int main(int argc, char *argv[])
     dist_to_focus = (look_at - look_from).length();
     vfov = 40.0;
     break;
+
+  default:
+  case 9:
+    world = cornell_box();
+
+    aspect_ratio = 1.0;
+    width = 600;
+    max_depth = 50;
+    min_samples_per_pixel = 100;
+    max_samples_per_pixel = 100;
+    background = Color(0, 0, 0);
+    look_from = Point3(278, 278, -800);
+    look_at = Point3(278, 278, 0);
+    vfov = 40.0;
+    dist_to_focus = 10.0; //(look_at - look_from).length();
+    time0 = 0;
+    time1 = 1;
+    aperture = 0.0;
+    break;
+
   }
 
   // Camera
   int height = static_cast<int>(width / aspect_ratio);
-  Camera cam(look_from, look_at, vup, vfov, aspect_ratio, aperture, dist_to_focus, 0.0, 1.0);
+  Camera cam(look_from, look_at, vup, vfov, aspect_ratio, aperture, dist_to_focus, time0, time1);
 
   // Image data
   std::vector<double> data(3 * height * width);
