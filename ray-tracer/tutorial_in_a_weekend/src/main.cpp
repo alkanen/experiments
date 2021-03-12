@@ -60,7 +60,7 @@ Color ray_color(const Ray &r, const Color &background, const Hittable &world, in
 
   Ray scattered;
   Color attenuation;
-  Color emitted = rec.material->emitted(rec.u, rec.v, rec.p);
+  Color emitted = rec.material->emitted(r, rec, rec.u, rec.v, rec.p);
   double pdf;
   Color albedo;
 
@@ -215,7 +215,7 @@ HittableList cornell_box() {
 
   objects.add(new YzRect(0, 555, 0, 555, 555, green));
   objects.add(new YzRect(0, 555, 0, 555, 0, red));
-  objects.add(new XzRect(213, 343, 227, 332, 554, light));
+  objects.add(new FlipFace(new XzRect(213, 343, 227, 332, 554, light)));
   objects.add(new XzRect(0, 555, 0, 555, 0, white));
   objects.add(new XzRect(0, 555, 0, 555, 555, white));
   objects.add(new XyRect(0, 555, 0, 555, 555, white));
