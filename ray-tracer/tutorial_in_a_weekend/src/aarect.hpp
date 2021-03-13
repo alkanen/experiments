@@ -74,14 +74,17 @@ public:
   virtual double pdf_value(const Point3 &o, const Vec3 &v) const
   {
     HitRecord rec;
-    if(this->hit(Ray(o, v), 0.001, infinity, rec))
+    if(!this->hit(Ray(o, v), 0.001, infinity, rec)) {
+      // std::cout << "XzRect::pdf_value(" << o << ", " << v << ") -> 0 (not hit)" << std::endl;
       return 0;
+    }
 
     auto area = (x1 - x0) * (z1 - z0);
     auto distance_squared = rec.t * rec.t * v.length_squared();
     auto cosine = fabs(dot(v, rec.normal) / v.length());
-
-    return distance_squared / (cosine * area);
+    auto retval = distance_squared / (cosine * area);
+    // std::cout << "XzRect::pdf_value(" << o << ", " << v << ") -> " << retval << std::endl;
+    return retval;
   }
 
   virtual Vec3 random(const Vec3 &o) const {

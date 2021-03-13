@@ -68,9 +68,13 @@ Color ray_color(const Ray &r, const Color &background, const Hittable &world, Hi
   if(!rec.material->scatter(r, rec, albedo, scattered, pdf))
     return emitted;
 
-  HittablePdf light_pdf(lights, rec.p);
-  scattered = Ray(rec.p, light_pdf.generate(), r.time());
-  pdf = light_pdf.value(scattered.direction());
+  auto p0 = HittablePdf(lights, rec.p);
+  auto p1 = CosinePdf(rec.normal);
+
+  MixturePdf mixed_pdf(&p0, &p1);
+
+  scattered = Ray(rec.p, mixed_pdf.generate(), r.time());
+  pdf = mixed_pdf.value(scattered.direction());
 
   return emitted
     + albedo
@@ -189,8 +193,15 @@ HittableList simple_light()
   return objects;
 }
 
-HittableList cornell_box() {
+typedef struct {
   HittableList objects;
+  Hittable *lights;
+} World;
+
+World cornell_box() {
+  World world;
+  //HittableList objects;
+  //Hittable *lights;
 
   auto red   = new Lambertian(Color(.65, .05, .05));
   auto white = new Lambertian(Color(.73, .73, .73));
@@ -202,24 +213,25 @@ HittableList cornell_box() {
   std::cout << "green: " << green << std::endl;
   std::cout << "light: " << light << std::endl;
 
-  objects.add(new YzRect(0, 555, 0, 555, 555, green));
-  objects.add(new YzRect(0, 555, 0, 555, 0, red));
-  //objects.add(new FlipFace(new XzRect(213, 343, 227, 332, 554, light)));
-  objects.add(new XzRect(0, 555, 0, 555, 0, white));
-  objects.add(new XzRect(0, 555, 0, 555, 555, white));
-  objects.add(new XyRect(0, 555, 0, 555, 555, white));
+  world.objects.add(new YzRect(0, 555, 0, 555, 555, green));
+  world.objects.add(new YzRect(0, 555, 0, 555, 0, red));
+  world.lights = new XzRect(213, 343, 227, 332, 554, new Material());
+  world.objects.add(new FlipFace(new XzRect(213, 343, 227, 332, 554, light)));
+  world.objects.add(new XzRect(0, 555, 0, 555, 0, white));
+  world.objects.add(new XzRect(0, 555, 0, 555, 555, white));
+  world.objects.add(new XyRect(0, 555, 0, 555, 555, white));
 
   Hittable *box1 = new Box(Point3(0, 0, 0), Point3(165, 330, 165), white);
   box1 = new RotateY(box1, 15);
   box1 = new Translate(box1, Vec3(265, 0, 295));
-  objects.add(box1);
+  world.objects.add(box1);
 
   Hittable *box2 = new Box(Point3(0, 0, 0), Point3(165, 165, 165), white);
   box2 = new RotateY(box2, -18);
   box2 = new Translate(box2, Vec3(130, 0, 65));
-  objects.add(box2);
+  world.objects.add(box2);
 
-  return objects;
+  return world;
 }
 
 HittableList cornell_smoke() {
@@ -347,12 +359,13 @@ int main(int argc, char *argv[])
   auto time1 = 1.0;
 
   // World
-  HittableList world;
+  World world;
+  HittableList objects;
   Hittable *lights;
 
   switch(0) {
   case 1:
-    world = random_scene();
+    objects = random_scene();
     background = Color(0.70, 0.80, 1.00);
     look_from = Point3(13, 2, 3);
     look_at = Point3(0, 0, 0);
@@ -361,7 +374,7 @@ int main(int argc, char *argv[])
     break;
 
   case 2:
-    world = two_spheres();
+    objects = two_spheres();
     background = Color(0.70, 0.80, 1.00);
     look_from = Point3(13, 2, 3);
     look_at = Point3(0, 0, 0);
@@ -369,7 +382,7 @@ int main(int argc, char *argv[])
     break;
 
   case 3:
-    world = two_perlin_spheres();
+    objects = two_perlin_spheres();
     background = Color(0.70, 0.80, 1.00);
     look_from = Point3(13, 2, 3);
     look_at = Point3(0,0,0);
@@ -377,7 +390,7 @@ int main(int argc, char *argv[])
     break;
 
   case 4:
-    world = earth();
+    objects = earth();
     look_from = Point3(13, 2, 3);
     background = Color(0.70, 0.80, 1.00);
     look_at = Point3(0, 0, 0);
@@ -385,7 +398,7 @@ int main(int argc, char *argv[])
     break;
 
   case 5:
-    world = simple_light();
+    objects = simple_light();
     background = Color(0, 0, 0);
     look_from = Point3(26, 3, 6);
     look_at = Point3(0, 2, 0);
@@ -394,6 +407,8 @@ int main(int argc, char *argv[])
 
   case 6:
     world = cornell_box();
+    objects = world.objects;
+    lights = world.lights;
     aspect_ratio = 1.0;
     width = 600;
     max_depth = 3;
@@ -405,7 +420,7 @@ int main(int argc, char *argv[])
     break;
 
   case 7:
-    world = cornell_smoke();
+    objects = cornell_smoke();
     aspect_ratio = 1.0;
     width = 600;
     max_samples_per_pixel = 200;
@@ -415,7 +430,7 @@ int main(int argc, char *argv[])
     break;
 
   case 8:
-    world = final_scene();
+    objects = final_scene();
     aspect_ratio = 1.0;
     width = 80;
     max_samples_per_pixel = 10000;
@@ -429,13 +444,17 @@ int main(int argc, char *argv[])
   default:
   case 9:
     world = cornell_box();
-    lights = new XzRect(213, 343, 227, 332, 554, new Material());
+    // auto light = new DiffuseLight(Color(15, 15, 15));
+    // lights = new XzRect(213, 343, 227, 332, 554, light);
+    // lights = new XzRect(213, 343, 227, 332, 554, new Material());
+    objects = world.objects;
+    lights = world.lights;
 
     aspect_ratio = 1.0;
     width = 600;
     max_depth = 50;
-    min_samples_per_pixel = 10;
-    max_samples_per_pixel = 10;
+    min_samples_per_pixel = 50;
+    max_samples_per_pixel = 1000;
     background = Color(0, 0, 0);
     look_from = Point3(278, 278, -800);
     look_at = Point3(278, 278, 0);
@@ -475,7 +494,7 @@ int main(int argc, char *argv[])
       &height,
       &data,
       &cam,
-      &world,
+      &objects,
       &lights,
       &max_depth,
       &pincer_limit,
@@ -503,11 +522,11 @@ int main(int argc, char *argv[])
 
           // Ray calculation contains some randomness
 #ifdef SAMPLE_CLAMP
-          c1 += clamp_color(ray_color(cam.get_ray(u, v), background, world, lights, max_depth), SAMPLE_CLAMP);
-          c2 += clamp_color(ray_color(cam.get_ray(u, v), background, world, lights, max_depth), SAMPLE_CLAMP);
+          c1 += clamp_color(ray_color(cam.get_ray(u, v), background, objects, lights, max_depth), SAMPLE_CLAMP);
+          c2 += clamp_color(ray_color(cam.get_ray(u, v), background, objects, lights, max_depth), SAMPLE_CLAMP);
 #else
-          c1 += ray_color(cam.get_ray(u, v), background, world, lights, max_depth);
-          c2 += ray_color(cam.get_ray(u, v), background, world, lights, max_depth);
+          c1 += ray_color(cam.get_ray(u, v), background, objects, lights, max_depth);
+          c2 += ray_color(cam.get_ray(u, v), background, objects, lights, max_depth);
 #endif
           count += 2;
         }
@@ -518,14 +537,14 @@ int main(int argc, char *argv[])
           auto v = (j + random_double()) / (height - 1);
 
           // Ray r = cam.get_ray(u, v);
-          // pixel_color += ray_color(r, world, lights, max_depth);
+          // pixel_color += ray_color(r, objects, lights, max_depth);
           // Ray calculation contains some randomness
 #ifdef SAMPLE_CLAMP
-          c1 += clamp_color(ray_color(cam.get_ray(u, v), background, world, lights, max_depth), SAMPLE_CLAMP);
-          c2 += clamp_color(ray_color(cam.get_ray(u, v), background, world, lights, max_depth), SAMPLE_CLAMP);
+          c1 += clamp_color(ray_color(cam.get_ray(u, v), background, objects, lights, max_depth), SAMPLE_CLAMP);
+          c2 += clamp_color(ray_color(cam.get_ray(u, v), background, objects, lights, max_depth), SAMPLE_CLAMP);
 #else
-          c1 += ray_color(cam.get_ray(u, v), background, world, lights, max_depth);
-          c2 += ray_color(cam.get_ray(u, v), background, world, lights, max_depth);
+          c1 += ray_color(cam.get_ray(u, v), background, objects, lights, max_depth);
+          c2 += ray_color(cam.get_ray(u, v), background, objects, lights, max_depth);
 #endif
           count += 2;
 

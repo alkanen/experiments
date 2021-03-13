@@ -8,6 +8,10 @@ set(CMAKE_CXX_COMPILER g++-10)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+if(LINUX)
+  set(CMAKE_CXX_FLAGS "-O3 -Wall")
+endif()
+
 project(RayTracerTutorial)
 
 add_executable(raytracer
@@ -31,6 +35,7 @@ add_executable(raytracer
   src/texture.hpp
   src/vec3.hpp
   src/onb.hpp
+  src/pdf.hpp
 )
 
 # Link against the dependency of Intel TBB (for parallel C++17 algorithms)
