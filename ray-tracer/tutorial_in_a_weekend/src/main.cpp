@@ -49,7 +49,7 @@ void save_png(std::vector<double> &data, const int width, const int height, cons
 }
 
 
-Color ray_color(const Ray &r, const Color &background, const Hittable &world, Hittable *lights, int depth)
+Color ray_color(const Ray &r, const Color &background, const Hittable &world, Hittable &lights, int depth)
 {
   HitRecord rec;
 
@@ -59,25 +59,25 @@ Color ray_color(const Ray &r, const Color &background, const Hittable &world, Hi
   if(!world.hit(r, 0.001, infinity, rec))
     return background;
 
-  Ray scattered;
-  Color attenuation;
+  ScatterRecord srec;
   Color emitted = rec.material->emitted(r, rec, rec.u, rec.v, rec.p);
-  double pdf;
-  Color albedo;
 
-  if(!rec.material->scatter(r, rec, albedo, scattered, pdf))
+  if(!rec.material->scatter(r, rec, srec))
     return emitted;
 
-  auto p0 = HittablePdf(lights, rec.p);
-  auto p1 = CosinePdf(rec.normal);
+  if(srec.is_specular) {
+    return srec.attenuation
+      * ray_color(srec.specular_ray, background, world, lights, depth-1);
+  }
 
-  MixturePdf mixed_pdf(&p0, &p1);
+  auto p0 = HittablePdf(&lights, rec.p);
+  MixturePdf mixed_pdf(&p0, srec.pdf);
 
-  scattered = Ray(rec.p, mixed_pdf.generate(), r.time());
-  pdf = mixed_pdf.value(scattered.direction());
+  Ray scattered = Ray(rec.p, mixed_pdf.generate(), r.time());
+  auto pdf = mixed_pdf.value(scattered.direction());
 
   return emitted
-    + albedo
+    + srec.attenuation
     * rec.material->scattering_pdf(r, rec, scattered) / pdf
     * ray_color(scattered, background, world, lights, depth-1);
 }
@@ -195,13 +195,11 @@ HittableList simple_light()
 
 typedef struct {
   HittableList objects;
-  Hittable *lights;
+  HittableList lights;
 } World;
 
 World cornell_box() {
   World world;
-  //HittableList objects;
-  //Hittable *lights;
 
   auto red   = new Lambertian(Color(.65, .05, .05));
   auto white = new Lambertian(Color(.73, .73, .73));
@@ -215,21 +213,27 @@ World cornell_box() {
 
   world.objects.add(new YzRect(0, 555, 0, 555, 555, green));
   world.objects.add(new YzRect(0, 555, 0, 555, 0, red));
-  world.lights = new XzRect(213, 343, 227, 332, 554, new Material());
+  world.lights.add(new XzRect(213, 343, 227, 332, 554, new Material()));
+  world.lights.add(new Sphere(Point3(190, 90, 190), 90, new Material()));
   world.objects.add(new FlipFace(new XzRect(213, 343, 227, 332, 554, light)));
   world.objects.add(new XzRect(0, 555, 0, 555, 0, white));
   world.objects.add(new XzRect(0, 555, 0, 555, 555, white));
   world.objects.add(new XyRect(0, 555, 0, 555, 555, white));
 
-  Hittable *box1 = new Box(Point3(0, 0, 0), Point3(165, 330, 165), white);
+  auto aluminium = new Metal(Color(0.8, 0.85, 0.88), 0.0);
+  Hittable *box1 = new Box(Point3(0, 0, 0), Point3(165, 330, 165), aluminium);
   box1 = new RotateY(box1, 15);
   box1 = new Translate(box1, Vec3(265, 0, 295));
   world.objects.add(box1);
 
+  /*
   Hittable *box2 = new Box(Point3(0, 0, 0), Point3(165, 165, 165), white);
   box2 = new RotateY(box2, -18);
   box2 = new Translate(box2, Vec3(130, 0, 65));
   world.objects.add(box2);
+  */
+  auto glass = new Dielectric(1.5);
+  world.objects.add(new Sphere(Point3(190, 90, 190), 90, glass));
 
   return world;
 }
@@ -344,9 +348,8 @@ int main(int argc, char *argv[])
   int min_samples_per_pixel = 100;
   int max_samples_per_pixel = 100000000;
   int max_depth = 25;
-  double pincer_limit = 0.00001; // 0.000005;
+  double pincer_limit = 0.0001; // 0.000005;
   Color background(0, 0, 0);
-  double sample_clamp = 2;
 
   // Camera settings
   auto look_from = Point3(13, 2, 3);
@@ -361,7 +364,7 @@ int main(int argc, char *argv[])
   // World
   World world;
   HittableList objects;
-  Hittable *lights;
+  HittableList lights;
 
   switch(0) {
   case 1:
@@ -444,9 +447,6 @@ int main(int argc, char *argv[])
   default:
   case 9:
     world = cornell_box();
-    // auto light = new DiffuseLight(Color(15, 15, 15));
-    // lights = new XzRect(213, 343, 227, 332, 554, light);
-    // lights = new XzRect(213, 343, 227, 332, 554, new Material());
     objects = world.objects;
     lights = world.lights;
 
@@ -506,8 +506,7 @@ int main(int argc, char *argv[])
       &mutex,
       &background,
       &samples_reached_max,
-      &filename,
-      &sample_clamp
+      &filename
     ] (auto &&j) {
       int64_t line_sample_count = 0;
       int64_t local_reached_max = 0;

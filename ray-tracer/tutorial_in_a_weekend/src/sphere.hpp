@@ -3,6 +3,8 @@
 
 #include "hittable.hpp"
 #include "vec3.hpp"
+#include "onb.hpp"
+#include "pdf.hpp"
 
 class Sphere : public Hittable {
 public:
@@ -16,6 +18,8 @@ public:
   virtual bool bounding_box(
     double time0, double time1, Aabb &output_box
   ) const override;
+  virtual double pdf_value(const Point3& o, const Vec3& v) const override;
+  virtual Vec3 random(const Point3& o) const override;
 
 public:
   Point3 center;
@@ -77,6 +81,25 @@ bool Sphere::bounding_box(double time0, double time1, Aabb &output_box) const
     center + Vec3(radius, radius, radius)
   );
   return true;
+}
+
+double Sphere::pdf_value(const Point3& o, const Vec3& v) const {
+  HitRecord rec;
+  if(!this->hit(Ray(o, v), 0.001, infinity, rec))
+    return 0;
+
+  auto cos_theta_max = sqrt(1 - radius * radius / (center - o).length_squared());
+  auto solid_angle = 2 * pi * (1 - cos_theta_max);
+
+  return  1 / solid_angle;
+}
+
+Vec3 Sphere::random(const Point3& o) const {
+    Vec3 direction = center - o;
+    auto distance_squared = direction.length_squared();
+    Onb uvw;
+    uvw.build_from_w(direction);
+    return uvw.local(random_to_sphere(radius, distance_squared));
 }
 
 #endif
