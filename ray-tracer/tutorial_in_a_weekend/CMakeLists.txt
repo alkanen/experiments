@@ -1,15 +1,26 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.11)
 
 if(UNIX AND NOT APPLE)
   set(LINUX TRUE)
 endif()
 
-set(CMAKE_CXX_COMPILER g++-10)
+if(LINUX)
+  set(CMAKE_CXX_FLAGS "-O3 -Wall")
+endif()
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-if(LINUX)
-  set(CMAKE_CXX_FLAGS "-O3 -Wall")
+include(FetchContent)
+
+FetchContent_Declare(json
+  GIT_REPOSITORY https://github.com/nlohmann/json.git
+  GIT_TAG v3.7.3
+)
+
+FetchContent_GetProperties(json)
+if(NOT json_POPULATED)
+  FetchContent_Populate(json)
+  add_subdirectory(${json_SOURCE_DIR} ${json_BINARY_DIR} EXCLUDE_FROM_ALL)
 endif()
 
 project(RayTracerTutorial)
@@ -41,5 +52,6 @@ add_executable(raytracer
 # Link against the dependency of Intel TBB (for parallel C++17 algorithms)
 if(LINUX)
   target_link_libraries(raytracer tbb)
+else()
+  target_link_libraries(raytracer nlohmann_json::nlohmann_json)
 endif()
-
