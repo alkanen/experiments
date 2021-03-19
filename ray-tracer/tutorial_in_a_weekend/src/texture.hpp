@@ -12,6 +12,7 @@
 class Texture {
 public:
   virtual Color value(double u, double v, const Point3 &p) const = 0;
+  virtual ~Texture() {};
 };
 
 class SolidColor : public Texture {

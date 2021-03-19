@@ -8,7 +8,10 @@
 #include <vector>
 #include <random>
 #include <iostream>
+#include <fstream>
 #include <mutex>
+
+#include <nlohmann/json.hpp>
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image.h"
@@ -27,24 +30,35 @@
 #include "constant_medium.hpp"
 #include "pdf.hpp"
 
+#define SAMPLE_CLAMP 100
 #undef SAMPLE_CLAMP
+
+#define MAX_COLOR 200
+
+using json = nlohmann::json;
+
 
 void save_png(std::vector<double> &data, const int width, const int height, const char *filename)
 {
   int y, x;
   uint8_t *pixels;
-  const int pitch = width * 3;
-  // Change from RGB to BGR because PNG sucks.
+  const int64_t pitch = width * 3;
   pixels = new uint8_t[data.size()];
+
+  // Change from RGB to BGR because PNG sucks.
   for(y=0; y<height; y++) {
-    for(x=0; x<pitch-3; x+=3) {
-      pixels[y * pitch + x + 0] = static_cast<int>(256 * clamp(sqrt(data[y * pitch + x + 0]), 0.0, 0.999));
-      pixels[y * pitch + x + 1] = static_cast<int>(256 * clamp(sqrt(data[y * pitch + x + 1]), 0.0, 0.999));
-      pixels[y * pitch + x + 2] = static_cast<int>(256 * clamp(sqrt(data[y * pitch + x + 2]), 0.0, 0.999));
+    for(x=0; x < pitch - 3; x += 3) {
+      auto r = data[(int64_t)y * pitch + x + 0LL];
+      auto g = data[(int64_t)y * pitch + x + 1LL];
+      auto b = data[(int64_t)y * pitch + x + 2LL];
+
+      pixels[(int64_t)y * pitch + x + 0LL] = static_cast<int>(256 * clamp(sqrt(r), 0.0, 0.999));
+      pixels[(int64_t)y * pitch + x + 1LL] = static_cast<int>(256 * clamp(sqrt(g), 0.0, 0.999));
+      pixels[(int64_t)y * pitch + x + 2LL] = static_cast<int>(256 * clamp(sqrt(b), 0.0, 0.999));
     }
   }
 
-  stbi_write_png( filename, width, height, STBI_rgb, pixels, width*3 );
+  stbi_write_png( filename, width, height, STBI_rgb, pixels, (int)pitch );
   delete[] pixels;
 }
 
@@ -70,8 +84,8 @@ Color ray_color(const Ray &r, const Color &background, const Hittable &world, Hi
       * ray_color(srec.specular_ray, background, world, lights, depth-1);
   }
 
-  auto p0 = HittablePdf(&lights, rec.p);
-  MixturePdf mixed_pdf(&p0, srec.pdf);
+  auto p0 = std::make_shared<HittablePdf>(&lights, rec.p);
+  MixturePdf mixed_pdf(p0, srec.pdf);
 
   Ray scattered = Ray(rec.p, mixed_pdf.generate(), r.time());
   auto pdf = mixed_pdf.value(scattered.direction());
@@ -345,6 +359,7 @@ int main(int argc, char *argv[])
   // Image properties
   auto aspect_ratio = 16.0 / 9.0;
   int width = 1920/5;
+  int height = 1080/5;
   int min_samples_per_pixel = 100;
   int max_samples_per_pixel = 100000000;
   int max_depth = 25;
@@ -366,113 +381,42 @@ int main(int argc, char *argv[])
   HittableList objects;
   HittableList lights;
 
-  switch(0) {
-  case 1:
-    objects = random_scene();
-    background = Color(0.70, 0.80, 1.00);
-    look_from = Point3(13, 2, 3);
-    look_at = Point3(0, 0, 0);
-    vfov = 20.0;
-    aperture = 0.1;
-    break;
+  std::ifstream camera_file("../camera.json", std::ifstream::in);
+  json camera_conf;
+  try {
+    camera_file >> camera_conf;
 
-  case 2:
-    objects = two_spheres();
-    background = Color(0.70, 0.80, 1.00);
-    look_from = Point3(13, 2, 3);
-    look_at = Point3(0, 0, 0);
-    vfov = 20.0;
-    break;
-
-  case 3:
-    objects = two_perlin_spheres();
-    background = Color(0.70, 0.80, 1.00);
-    look_from = Point3(13, 2, 3);
-    look_at = Point3(0,0,0);
-    vfov = 20.0;
-    break;
-
-  case 4:
-    objects = earth();
-    look_from = Point3(13, 2, 3);
-    background = Color(0.70, 0.80, 1.00);
-    look_at = Point3(0, 0, 0);
-    vfov = 20.0;
-    break;
-
-  case 5:
-    objects = simple_light();
-    background = Color(0, 0, 0);
-    look_from = Point3(26, 3, 6);
-    look_at = Point3(0, 2, 0);
-    vfov = 20.0;
-    break;
-
-  case 6:
-    world = cornell_box();
-    objects = world.objects;
-    lights = world.lights;
-    aspect_ratio = 1.0;
-    width = 600;
-    max_depth = 3;
-    background = Color(0, 0, 0);
-    look_from = Point3(278, 278, -800);
-    look_at = Point3(278, 278, 0);
-    vfov = 40.0;
-    dist_to_focus = 400;
-    break;
-
-  case 7:
-    objects = cornell_smoke();
-    aspect_ratio = 1.0;
-    width = 600;
-    max_samples_per_pixel = 200;
-    look_from = Point3(278, 278, -800);
-    look_at = Point3(278, 278, 0);
-    vfov = 40.0;
-    break;
-
-  case 8:
-    objects = final_scene();
-    aspect_ratio = 1.0;
-    width = 80;
-    max_samples_per_pixel = 10000;
-    background = Color(0, 0, 0);
-    look_from = Point3(478, 278, -600);
-    look_at = Point3(278, 278, 0);
-    dist_to_focus = (look_at - look_from).length();
-    vfov = 40.0;
-    break;
-
-  default:
-  case 9:
-    world = cornell_box();
-    objects = world.objects;
-    lights = world.lights;
-
-    aspect_ratio = 1.0;
-    width = 600;
-    max_depth = 50;
-    min_samples_per_pixel = 50;
-    max_samples_per_pixel = 1000;
-    background = Color(0, 0, 0);
-    look_from = Point3(278, 278, -800);
-    look_at = Point3(278, 278, 0);
-    vfov = 40.0;
-    dist_to_focus = 10.0; //(look_at - look_from).length();
-    time0 = 0;
-    time1 = 1;
-    aperture = 0.0;
-    break;
-
+    look_from = Point3(camera_conf["look_from"][0], camera_conf["look_from"][1], camera_conf["look_from"][2]);
+    look_at = Point3(camera_conf["look_at"][0], camera_conf["look_at"][1], camera_conf["look_at"][2]);
+    vup = Vec3(camera_conf["up"][0], camera_conf["up"][1], camera_conf["up"][2]);
+    vfov = camera_conf["vertical_fov"];
+    dist_to_focus = camera_conf["dist_to_focus"];
+    aperture = camera_conf["aperture"];
+    time0 = camera_conf["time_start"];
+    time1 = camera_conf["time_end"];
+  } catch(nlohmann::detail::parse_error e) {
+    std::cout << "No camera file found, using default values" << std::endl;
   }
 
+  world = cornell_box();
+  objects = world.objects;
+  lights = world.lights;
+
+  background = Color(0, 0, 0);
+  width = 600;
+  height = 600;
+  aspect_ratio = (double)width / height;
+
+  max_depth = 25;
+  min_samples_per_pixel = 100;
+  max_samples_per_pixel = 100;
+  pincer_limit = 0.000005;
+
   // Camera
-  int height = static_cast<int>(width / aspect_ratio);
   Camera cam(look_from, look_at, vup, vfov, aspect_ratio, aperture, dist_to_focus, time0, time1);
 
   // Image data
-  std::vector<double> data(3 * height * width);
+  std::vector<double> data(3LL * height * width);
   std::vector<int> scanlines;
   for(int i = 0; i < height; ++i) {
     scanlines.push_back(i);
@@ -516,34 +460,58 @@ int main(int argc, char *argv[])
         Color c1(0, 0, 0), c2(0, 0, 0);
         int64_t count = 0;
         for(int s = 0; s < min_samples_per_pixel / 2; s++) {
-          auto u = (i + random_double()) / (width - 1);
-          auto v = (j + random_double()) / (height - 1);
+          auto u = (i + random_double()) / ((double)width - 1);
+          auto v = (j + random_double()) / ((double)height - 1);
 
           // Ray calculation contains some randomness
+          auto tmpc1 = ray_color(cam.get_ray(u, v), background, objects, lights, max_depth);
+          auto tmpc2 = ray_color(cam.get_ray(u, v), background, objects, lights, max_depth);
+
+	  if(
+	     is_nan(tmpc1) || is_nan(tmpc2)
+	     || tmpc1.length() > MAX_COLOR || tmpc2.length() > MAX_COLOR
+	     ) {
+	    std::cerr << "Color either NaN or too large: " << tmpc1 << ", " << tmpc2 << std::endl;
+	    s -= 2;
+	    continue;
+	  }
+
 #ifdef SAMPLE_CLAMP
-          c1 += clamp_color(ray_color(cam.get_ray(u, v), background, objects, lights, max_depth), SAMPLE_CLAMP);
-          c2 += clamp_color(ray_color(cam.get_ray(u, v), background, objects, lights, max_depth), SAMPLE_CLAMP);
+          c1 += clamp_color(tmpc1, SAMPLE_CLAMP);
+          c2 += clamp_color(tmpc2, SAMPLE_CLAMP);
 #else
-          c1 += ray_color(cam.get_ray(u, v), background, objects, lights, max_depth);
-          c2 += ray_color(cam.get_ray(u, v), background, objects, lights, max_depth);
+          c1 += tmpc1;
+          c2 += tmpc2;
 #endif
           count += 2;
         }
 
         // Adaptive loop
         for(int s = min_samples_per_pixel / 2; s < max_samples_per_pixel / 2; s++) {
-          auto u = (i + random_double()) / (width - 1);
-          auto v = (j + random_double()) / (height - 1);
+          auto u = (i + random_double()) / ((double)width - 1);
+          auto v = (j + random_double()) / ((double)height - 1);
 
           // Ray r = cam.get_ray(u, v);
           // pixel_color += ray_color(r, objects, lights, max_depth);
           // Ray calculation contains some randomness
+          auto tmpc1 = ray_color(cam.get_ray(u, v), background, objects, lights, max_depth);
+          auto tmpc2 = ray_color(cam.get_ray(u, v), background, objects, lights, max_depth);
+
+	  if(
+	     is_nan(tmpc1) || is_nan(tmpc2)
+	     || tmpc1.length() > MAX_COLOR || tmpc2.length() > MAX_COLOR
+	     ) {
+	    std::cerr << "Color either NaN or too large: " << tmpc1 << ", " << tmpc2 << std::endl;
+	    s -= 2;
+	    continue;
+	  }
+
 #ifdef SAMPLE_CLAMP
-          c1 += clamp_color(ray_color(cam.get_ray(u, v), background, objects, lights, max_depth), SAMPLE_CLAMP);
-          c2 += clamp_color(ray_color(cam.get_ray(u, v), background, objects, lights, max_depth), SAMPLE_CLAMP);
+          c1 += clamp_color(tmpc1, SAMPLE_CLAMP);
+          c2 += clamp_color(tmpc2, SAMPLE_CLAMP);
 #else
-          c1 += ray_color(cam.get_ray(u, v), background, objects, lights, max_depth);
-          c2 += ray_color(cam.get_ray(u, v), background, objects, lights, max_depth);
+          c1 += tmpc1;
+          c2 += tmpc2;
 #endif
           count += 2;
 
@@ -557,9 +525,9 @@ int main(int argc, char *argv[])
         }
 
         line_sample_count += count;
-        data[(height - j - 1) * width * 3 + i * 3 + 0] = (c1 + c2).x() / count;
-        data[(height - j - 1) * width * 3 + i * 3 + 1] = (c1 + c2).y() / count;
-        data[(height - j - 1) * width * 3 + i * 3 + 2] = (c1 + c2).z() / count;
+        data[((int64_t)height - j - 1) * width * 3 + i * 3 + 0] = (c1 + c2).x() / count;
+        data[((int64_t)height - j - 1) * width * 3 + i * 3 + 1] = (c1 + c2).y() / count;
+        data[((int64_t)height - j - 1) * width * 3 + i * 3 + 2] = (c1 + c2).z() / count;
       }
 
       {
@@ -586,7 +554,7 @@ int main(int argc, char *argv[])
     }
   );
   std::cerr << "\nRender complete." << std::endl;
-  std::cerr << "Average " << ((double)sample_count / (width * height)) << " samples per pixel" << std::endl;
+  std::cerr << "Average " << ((double)sample_count / ((double)width * height)) << " samples per pixel" << std::endl;
 
   // Dump image
   std::cerr << "Saving image to '" << filename << "'" << std::endl;

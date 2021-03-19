@@ -1,6 +1,8 @@
 #ifndef MATERIAL_H
 #define MATERIAL_H
 
+#include <memory>
+
 #include "rtweekend.hpp"
 
 #include "texture.hpp"
@@ -13,7 +15,7 @@ struct ScatterRecord {
     Ray specular_ray;
     bool is_specular;
     Color attenuation;
-    Pdf *pdf;
+    std::shared_ptr<Pdf> pdf;
 };
 
 class Material {
@@ -36,8 +38,9 @@ public:
 
 class Lambertian : public Material {
 public:
-  Lambertian(const Color &a) : albedo(new SolidColor(a)) {}
-  Lambertian(Texture *a) : albedo(a) {}
+  Lambertian(const Color &a) : albedo(new SolidColor(a)), allocated(true) {}
+  Lambertian(Texture *a) : albedo(a), allocated(false) {}
+  virtual ~Lambertian() { if (allocated) delete albedo; }
 
   virtual bool scatter(
     const Ray &r_in, const HitRecord &rec, ScatterRecord &srec
@@ -45,7 +48,7 @@ public:
   {
     srec.is_specular = false;
     srec.attenuation = albedo->value(rec.u, rec.v, rec.p);
-    srec.pdf = new CosinePdf(rec.normal);
+    srec.pdf = std::make_shared<CosinePdf>(rec.normal);
     return true;
   }
 
@@ -58,6 +61,7 @@ public:
 
 public:
   Texture *albedo;
+  bool allocated;
 };
 
 class Metal : public Material {

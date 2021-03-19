@@ -16,6 +16,21 @@ Color clamp_color(const Color& color, double maxval)
   return color * ratio;
 }
 
+bool is_nan(Color &color)
+{
+  return (color[0] != color[0]) || (color[1] != color[1]) || (color[2] != color[2]);
+}
+
+void color_adjust_nan(Color &color)
+{
+  if (color[0] != color[0])
+    color[0] = 0;
+  if (color[1] != color[1])
+    color[1] = 0;
+  if (color[2] != color[2])
+    color[2] = 0;
+}
+
 void write_color(std::ostream &out, Color pixel_color, int samples_per_pixel) {
   auto r = pixel_color.x();
   auto g = pixel_color.y();

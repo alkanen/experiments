@@ -52,6 +52,5 @@ add_executable(raytracer
 # Link against the dependency of Intel TBB (for parallel C++17 algorithms)
 if(LINUX)
   target_link_libraries(raytracer tbb)
-else()
-  target_link_libraries(raytracer nlohmann_json::nlohmann_json)
 endif()
+target_link_libraries(raytracer nlohmann_json::nlohmann_json)
