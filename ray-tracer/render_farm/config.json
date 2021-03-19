@@ -1,0 +1,54 @@
+{
+    "port": 12345,
+    "host": "0.0.0.0",
+    "jobs": {
+        "two_spheres_references": {
+            "client_version": "0.0.0",
+            "folder": "./two_spheres/",
+            "camera": {
+                "look_from": [13, 2, 3],
+                "look_at": [0, 0, 0],
+                "up": [0, 1, 0],
+                "vertical_fov": 20.0,
+                "dist_to_focus": 10.0,
+                "aperture": 0.1
+            },
+            "image": {
+                "width": 192,
+                "height": 108,
+                "background": [0.70, 0.80, 1.00]
+            },
+            "textures": [
+                {
+                    "name": "checker",
+                    "type": "CheckerTexture",
+                    "color1": [0.2, 0.3, 0.1],
+                    "color2": [0.9, 0.9, 0.9]
+                }
+            ],
+            "materials": [
+                {
+                    "name": "sphere_material",
+                    "type": "Lambertian",
+                    "texture": "checker"
+                }
+            ],
+            "objects": [
+                {
+                    "name": "sphere1",
+                    "type": "Sphere",
+                    "center": [0, -10, 0],
+                    "radius": 10,
+                    "material": "sphere_material"
+                },
+                {
+                    "name": "sphere2",
+                    "type": "Sphere",
+                    "center": [0, 10, 0],
+                    "radius": 10,
+                    "material": "sphere_material"
+                }
+            ]
+        }
+    }
+}
