@@ -13,6 +13,7 @@ public:
 
   void clear() { objects.clear(); }
   void add(Hittable *object) { objects.push_back(object); }
+  size_t size(void) { return objects.size(); }
 
   virtual bool hit(
     const Ray &r, double t_min, double t_max, HitRecord &rec

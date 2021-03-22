@@ -11,9 +11,21 @@
 
 class Texture {
 public:
+  void setName(std::string n) {name = n;}
   virtual Color value(double u, double v, const Point3 &p) const = 0;
   virtual ~Texture() {};
+  virtual void serialize(std::ostream &out) const {
+    out << "Unknown texture type";
+  }
+
+public:
+  std::string name;
 };
+inline std::ostream& operator<<(std::ostream &out, const Texture &t)
+{
+  t.serialize(out);
+  return out;
+}
 
 class SolidColor : public Texture {
 public:
@@ -26,10 +38,21 @@ public:
   virtual Color value(double u, double v, const Vec3 &p) const override {
     return color_value;
   }
+  virtual void serialize(std::ostream &out) const override {
+    out
+      << "SolidColor("
+      << color_value[0]
+      << ", "
+      << color_value[1]
+      << ", "
+      << color_value[2]
+      << ")";
+  }
 
-private:
+public:
   Color color_value;
 };
+
 
 class CheckerTexture : public Texture {
 public:
@@ -48,7 +71,14 @@ public:
     else
       return even->value(u, v, p);
   }
-
+  virtual void serialize(std::ostream &out) const override {
+    out
+      << "CheckerTexture("
+      << (*even)
+      << ", "
+      << (*odd)
+      << ")";
+  }
 public:
   Texture *even;
   Texture *odd;

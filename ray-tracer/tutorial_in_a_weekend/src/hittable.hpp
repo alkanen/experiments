@@ -37,6 +37,7 @@ inline std::ostream& operator<<(std::ostream &out, const HitRecord &rec)
 
 class Hittable {
 public:
+  void setName(std::string n) {name = n;}
   virtual bool hit(const Ray &r, double t_min, double t_max, HitRecord &rec) const = 0;
   virtual bool bounding_box(double time0, double time1, Aabb &output_box) const = 0;
   virtual double pdf_value(const Point3 &o, const Vec3 &v) const {
@@ -45,6 +46,9 @@ public:
   virtual Vec3 random(const Vec3 &o) const {
     return Vec3(1, 0, 0);
   }
+
+public:
+  std::string name;
 };
 
 class Translate : public Hittable

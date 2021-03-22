@@ -20,6 +20,7 @@ struct ScatterRecord {
 
 class Material {
 public:
+  void setName(std::string n) {name = n;}
   virtual bool scatter(
     const Ray& r_in, const HitRecord& rec, ScatterRecord &srec
   ) const {
@@ -34,6 +35,9 @@ public:
   {
     return Color(0, 0, 0);
   }
+
+public:
+  std::string name;
 };
 
 class Lambertian : public Material {

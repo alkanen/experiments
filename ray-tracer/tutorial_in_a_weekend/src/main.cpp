@@ -74,278 +74,230 @@ Color ray_color(const Ray &r, const Color &background, const Hittable &world, Hi
     return background;
 
   ScatterRecord srec;
+  //std::cerr << "ray_color before rec.material->emitted()" << std::endl;
   Color emitted = rec.material->emitted(r, rec, rec.u, rec.v, rec.p);
 
+  //std::cerr << "ray_color before !rec.material->scatter()" << std::endl;
   if(!rec.material->scatter(r, rec, srec))
     return emitted;
 
   if(srec.is_specular) {
+    //std::cerr << "ray_color before srec.attenuation * ray_color()" << std::endl;
     return srec.attenuation
       * ray_color(srec.specular_ray, background, world, lights, depth-1);
   }
 
-  auto p0 = std::make_shared<HittablePdf>(&lights, rec.p);
-  MixturePdf mixed_pdf(p0, srec.pdf);
+  Vec3 scatter_direction;
+  Ray scattered;
+  double pdf;
+  if(dynamic_cast<HittableList*>(&lights)->size()) {
+    //std::cerr << "ray_color before MixturePdf" << std::endl;
+    auto p0 = std::make_shared<HittablePdf>(&lights, rec.p);
+    MixturePdf mixed_pdf = MixturePdf(p0, srec.pdf);
+    //std::cerr << "ray_color before mixed_pdf.generate()" << std::endl;
+    scatter_direction = mixed_pdf.generate();
+    scattered = Ray(rec.p, scatter_direction, r.time());
+    //std::cerr << "ray_color before mixed_pdf.value()" << std::endl;
+    pdf = mixed_pdf.value(scattered.direction());
+  } else {
+    //std::cerr << "ray_color before srec.pdf->generat()" << std::endl;
+    scatter_direction = srec.pdf->generate();
+    scattered = Ray(rec.p, scatter_direction, r.time());
+    //std::cerr << "ray_color before srec.pdf->value()" << std::endl;
+    pdf = srec.pdf->value(scattered.direction());
+  }
 
-  Ray scattered = Ray(rec.p, mixed_pdf.generate(), r.time());
-  auto pdf = mixed_pdf.value(scattered.direction());
-
+  //std::cerr << "ray_color return" << std::endl;
   return emitted
     + srec.attenuation
     * rec.material->scattering_pdf(r, rec, scattered) / pdf
     * ray_color(scattered, background, world, lights, depth-1);
 }
 
-HittableList random_scene()
-{
-  HittableList world;
-
-  auto checker = new CheckerTexture(Color(0.2, 0.3, 0.1), Color(0.9, 0.9, 0.9));
-  auto ground_material = new Lambertian(checker);
-  auto sphere = new Sphere(Point3(0,-1000,0), 1000, ground_material);
-  world.add(sphere);
-
-  for (int a = -11; a < 11; a++) {
-    for (int b = -11; b < 11; b++) {
-      auto choose_mat = random_double();
-      Point3 center(a + 0.9*random_double(), 0.2, b + 0.9*random_double());
-
-      if ((center - Point3(4, 0.2, 0)).length() > 0.9) {
-        Material *sphere_material;
-        Hittable *sphere_tmp;
-        if (choose_mat < 0.8) {
-          // diffuse
-          auto albedo = Color::random() * Color::random();
-          sphere_material = new Lambertian(albedo);
-          Point3 center2 = center + Vec3(0, random_double(0,.5), 0);
-          sphere_tmp = new MovingSphere(
-            center,
-            center2,
-            0.0,
-            1.0,
-            0.2,
-            sphere_material
-          );
-          world.add(sphere_tmp);
-        } else if (choose_mat < 0.95) {
-          // metal
-          auto albedo = Color::random(0.5, 1);
-          auto fuzz = random_double(0, 0.5);
-          sphere_material = new Metal(albedo, fuzz);
-          sphere_tmp = new Sphere(center, 0.2, sphere_material);
-          world.add(sphere_tmp);
-        } else {
-          // glass
-          sphere_material = new Dielectric(1.5);
-          sphere_tmp = new Sphere(center, 0.2, sphere_material);
-          world.add(sphere_tmp);
-        }
-      }
-    }
-  }
-
-  // Middle
-  Material *material1 = new Dielectric(1.5);
-  Sphere *sphere1 = new Sphere(Point3(0, 1, 0), 1.0, material1);
-  world.add(sphere1);
-
-  // Farthest
-  Material *material2 = new Lambertian(Color(0.4, 0.2, 0.1));
-  Sphere *sphere2 = new Sphere(Point3(-4, 1, 0), 1.0, material2);
-  world.add(sphere2);
-
-  // Closest
-  Material * material3 = new Metal(Color(0.7, 0.6, 0.5), 0.0);
-  Sphere *sphere3 = new Sphere(Point3(4, 1, 0), 1.0, material3);
-  world.add(sphere3);
-
-  return world;
-}
-
-HittableList two_spheres()
-{
-  HittableList objects;
-
-  auto checker = new CheckerTexture(Color(0.2, 0.3, 0.1), Color(0.9, 0.9, 0.9));
-
-  objects.add(new Sphere(Point3(0,-10, 0), 10, new Lambertian(checker)));
-  objects.add(new Sphere(Point3(0, 10, 0), 10, new Lambertian(checker)));
-
-  return objects;
-}
-
-HittableList two_perlin_spheres() {
-  HittableList objects;
-
-  auto pertext = new NoiseTexture(4);
-  objects.add(new Sphere(Point3(0, -1000, 0), 1000, new Lambertian(pertext)));
-  objects.add(new Sphere(Point3(0, 2, 0), 2, new Lambertian(pertext)));
-
-  return objects;
-}
-
-HittableList earth()
-{
-  auto earth_texture = new ImageTexture("earthmap.jpg");
-  auto earth_surface = new Lambertian(earth_texture);
-  auto globe = new Sphere(Point3(0,0,0), 2, earth_surface);
-
-  return HittableList(globe);
-}
-
-HittableList simple_light()
-{
-  HittableList objects;
-
-  auto pertext = new NoiseTexture(4);
-  objects.add(new Sphere(Point3(0, -1000, 0), 1000, new Lambertian(pertext)));
-  objects.add(new Sphere(Point3(0, 2, 0), 2, new Lambertian(pertext)));
-
-  auto difflight = new DiffuseLight(Color(4, 4, 4));
-  objects.add(new XyRect(3, 5, 1, 3, -2, difflight));
-
-  return objects;
-}
-
 typedef struct {
+  Color background;
+  std::map<std::string, Texture*> texture_list;
+  std::map<std::string, Material*> material_list;
+  std::map<std::string, Hittable*> object_list;
   HittableList objects;
   HittableList lights;
 } World;
 
-World cornell_box() {
+
+World build_world(json &conf)
+{
   World world;
+  std::cerr << "Reading background color" << std::endl;
+  auto bg = conf["background"];
+  world.background = Color(
+    bg["red"].get<double>(),
+    bg["green"].get<double>(),
+    bg["blue"].get<double>()
+  );
+  std::cerr << "  " << world.background << std::endl;
 
-  auto red   = new Lambertian(Color(.65, .05, .05));
-  auto white = new Lambertian(Color(.73, .73, .73));
-  auto green = new Lambertian(Color(.12, .45, .15));
-  auto light = new DiffuseLight(Color(15, 15, 15));
+  std::cerr << "Reading textures" << std::endl;
+  for(auto tx : conf["textures"]) {
+    try {
+      std::string key = tx["name"].get<std::string>();
+      std::string texture_type = tx["type"].get<std::string>();
 
-  std::cout << "red:   " << red << std::endl;
-  std::cout << "white: " << white << std::endl;
-  std::cout << "green: " << green << std::endl;
-  std::cout << "light: " << light << std::endl;
+      Texture *new_texture = NULL;
+      if( world.texture_list.find(key) != world.texture_list.end() ) {
+        throw("The same texture name can't be used twice: '" + key + "'");
+      }
+      if( texture_type.find("__") != std::string::npos ) {
+        throw("Double underscores are not allowed in names: '" + key + "'");
+      }
 
-  world.objects.add(new YzRect(0, 555, 0, 555, 555, green));
-  world.objects.add(new YzRect(0, 555, 0, 555, 0, red));
-  world.lights.add(new XzRect(213, 343, 227, 332, 554, new Material()));
-  world.lights.add(new Sphere(Point3(190, 90, 190), 90, new Material()));
-  world.objects.add(new FlipFace(new XzRect(213, 343, 227, 332, 554, light)));
-  world.objects.add(new XzRect(0, 555, 0, 555, 0, white));
-  world.objects.add(new XzRect(0, 555, 0, 555, 555, white));
-  world.objects.add(new XyRect(0, 555, 0, 555, 555, white));
+      if( texture_type == "CheckerTexture" ) {
+        auto col1 = tx["color1"].get<std::string>();
+        auto col2 = tx["color2"].get<std::string>();
 
-  auto aluminium = new Metal(Color(0.8, 0.85, 0.88), 0.0);
-  Hittable *box1 = new Box(Point3(0, 0, 0), Point3(165, 330, 165), aluminium);
-  box1 = new RotateY(box1, 15);
-  box1 = new Translate(box1, Vec3(265, 0, 295));
-  world.objects.add(box1);
+        new_texture = new CheckerTexture(
+          world.texture_list[col1], world.texture_list[col2]
+        );
+      } else if( texture_type == "SolidColor" ) {
+        auto red = tx["red"].get<double>();
+        auto green = tx["green"].get<double>();
+        auto blue = tx["blue"].get<double>();
 
-  /*
-  Hittable *box2 = new Box(Point3(0, 0, 0), Point3(165, 165, 165), white);
-  box2 = new RotateY(box2, -18);
-  box2 = new Translate(box2, Vec3(130, 0, 65));
-  world.objects.add(box2);
-  */
-  auto glass = new Dielectric(1.5);
-  world.objects.add(new Sphere(Point3(190, 90, 190), 90, glass));
+        new_texture = new SolidColor(Color(red, green, blue));
+      } else {
+        throw("Unknown texture type: '" + texture_type + "'");
+      }
 
-  return world;
-}
+      world.texture_list[key] = new_texture;
 
-HittableList cornell_smoke() {
-  HittableList objects;
-
-  auto red   = new Lambertian(Color(.65, .05, .05));
-  auto white = new Lambertian(Color(.73, .73, .73));
-  auto green = new Lambertian(Color(.12, .45, .15));
-  auto light = new DiffuseLight(Color(7, 7, 7));
-
-  objects.add(new YzRect(0, 555, 0, 555, 555, green));
-  objects.add(new YzRect(0, 555, 0, 555, 0, red));
-  objects.add(new XzRect(113, 443, 127, 432, 554, light));
-  objects.add(new XzRect(0, 555, 0, 555, 555, white));
-  objects.add(new XzRect(0, 555, 0, 555, 0, white));
-  objects.add(new XyRect(0, 555, 0, 555, 555, white));
-
-  Hittable *box1 = new Box(Point3(0, 0, 0), Point3(165, 330, 165), white);
-  box1 = new RotateY(box1, 15);
-  box1 = new Translate(box1, Vec3(265, 0, 295));
-
-  Hittable *box2 = new Box(Point3(0, 0, 0), Point3(165, 165, 165), white);
-  box2 = new RotateY(box2, -18);
-  box2 = new Translate(box2, Vec3(130, 0, 65));
-
-  objects.add(new ConstantMedium(box1, 0.01, Color(0, 0, 0)));
-  objects.add(new ConstantMedium(box2, 0.01, Color(1, 1, 1)));
-
-  return objects;
-}
-
-HittableList final_scene() {
-  HittableList boxes1;
-  auto ground = new Lambertian(Color(0.48, 0.83, 0.53));
-
-  const int boxes_per_side = 20;
-  for (int i = 0; i < boxes_per_side; i++) {
-    for (int j = 0; j < boxes_per_side; j++) {
-      auto w = 100.0;
-      auto x0 = -1000.0 + i*w;
-      auto z0 = -1000.0 + j*w;
-      auto y0 = 0.0;
-      auto x1 = x0 + w;
-      auto y1 = random_double(1,101);
-      auto z1 = z0 + w;
-
-      boxes1.add(new Box(Point3(x0, y0, z0), Point3(x1, y1, z1), ground));
+      world.texture_list[key]->setName(key);
+      std::cerr << "  " + key << std::endl;
+    } catch(nlohmann::detail::type_error &e) {
+      std::cerr << "Texture" << std::endl;
+      throw(e);
     }
   }
 
-  HittableList objects;
+  std::cerr << "Reading materials" << std::endl;
+  for(auto mtl : conf["materials"]) {
+    try {
+      std::string key = mtl["name"];
+      std::string material_type = mtl["type"];
 
-  objects.add(new BvhNode(boxes1, 0, 1));
+      if( world.material_list.find(key) != world.material_list.end() ) {
+        throw("The same material name can't be used twice: '" + key + "'");
+      }
+      if( material_type.find("__") != std::string::npos ) {
+        throw("Double underscores are not allowed in names: '" + key + "'");
+      }
 
-  auto light = new DiffuseLight(Color(7, 7, 7));
-  objects.add(new XzRect(123, 423, 147, 412, 554, light));
+      if( material_type == "Lambertian" ) {
+        auto tex = mtl["texture"].get<std::string>();
 
-  auto center1 = Point3(400, 400, 200);
-  auto center2 = center1 + Vec3(30,0,0);
-  auto moving_sphere_material = new Lambertian(Color(0.7, 0.3, 0.1));
-  objects.add(new MovingSphere(center1, center2, 0, 1, 50, moving_sphere_material));
+        world.material_list[key] = new Lambertian(world.texture_list[tex]);
+      } else if( material_type == "DiffuseLight" ) {
+        auto tex = mtl["texture"].get<std::string>();
 
-  objects.add(new Sphere(Point3(260, 150, 45), 50, new Dielectric(1.5)));
-  objects.add(new Sphere(
-    Point3(0, 150, 145), 50, new Metal(Color(0.8, 0.8, 0.9), 1.0)
-  ));
+        world.material_list[key] = new DiffuseLight(world.texture_list[tex]);
+      } else if( material_type == "Metal" ) {
+        auto red = mtl["red"].get<double>();
+        auto green = mtl["green"].get<double>();
+        auto blue = mtl["blue"].get<double>();
 
-  auto boundary = new Sphere(Point3(360,150,145), 70, new Dielectric(1.5));
-  objects.add(boundary);
-  objects.add(new ConstantMedium(boundary, 0.2, Color(0.2, 0.4, 0.9)));
-  boundary = new Sphere(Point3(0, 0, 0), 5000, new Dielectric(1.5));
-  objects.add(new ConstantMedium(boundary, .0001, Color(1, 1, 1)));
+        auto fuzz = mtl["fuzz"].get<double>();
 
-  auto emat = new Lambertian(new ImageTexture("earthmap.jpg"));
-  objects.add(new Sphere(Point3(400, 200, 400), 100, emat));
-  auto pertext = new NoiseTexture(0.1);
-  objects.add(new Sphere(Point3(220, 280, 300), 80, new Lambertian(pertext)));
+        world.material_list[key] = new Metal(Color(red, green, blue), fuzz);
+      } else if( material_type == "Dielectric" ) {
+        auto refraction = mtl["refraction"].get<double>();
 
-  HittableList boxes2;
-  auto white = new Lambertian(Color(.73, .73, .73));
-  int ns = 1000;
-  for (int j = 0; j < ns; j++) {
-    boxes2.add(new Sphere(Point3::random(0,165), 10, white));
+        world.material_list[key] = new Dielectric(refraction);
+      } else {
+        throw("Unknown material type: '" + material_type + "'");
+      }
+
+      world.material_list[key]->setName(key);
+      std::cerr << "  " + key << std::endl;
+    } catch(nlohmann::detail::type_error &e) {
+      std::cerr << "Material" << std::endl;
+      throw(e);
+    }
   }
 
-  objects.add(
-    new Translate(
-      new RotateY(
-        new BvhNode(boxes2, 0.0, 1.0),
-        15
-      ),
-      Vec3(-100,270,395)
-    )
-  );
+  std::cerr << "Reading objects" << std::endl;
+  for(auto obj : conf["objects"]) {
+    try {
+      std::string key = obj["name"];
+      std::string object_type = obj["type"];
 
-  return objects;
+      if( world.object_list.find(key) != world.object_list.end() ) {
+        throw("The same object name can't be used twice: '" + key + "'");
+      }
+      if( object_type.find("__") != std::string::npos ) {
+        throw("Double underscores are not allowed in names: '" + key + "'");
+      }
+
+      if( object_type == "Sphere" ) {
+        auto c = obj["center"];
+        auto x = c[0].get<double>();
+        auto y = c[1].get<double>();
+        auto z = c[2].get<double>();
+        auto center = Point3(x, y, z);
+        auto radius = obj["radius"].get<double>();
+        auto material = world.material_list[obj["material"].get<std::string>()];
+        world.object_list[key] = new Sphere(
+          center, radius, material
+        );
+
+        world.objects.add(world.object_list[key]);
+      } else if( object_type == "MovingSphere" ) {
+        auto c = obj["center0"];
+        auto x = c[0].get<double>();
+        auto y = c[1].get<double>();
+        auto z = c[2].get<double>();
+        auto center0 = Point3(x, y, z);
+
+        c = obj["center1"];
+        x = c[0].get<double>();
+        y = c[1].get<double>();
+        z = c[2].get<double>();
+        auto center1 = Point3(x, y, z);
+
+        auto radius = obj["radius"].get<double>();
+
+        auto time0 = obj["time0"].get<double>();
+        auto time1 = obj["time1"].get<double>();
+
+        auto material = world.material_list[obj["material"].get<std::string>()];
+        world.object_list[key] = new MovingSphere(
+          center0, center1, time0, time1, radius, material
+        );
+      } else {
+        throw("Unknown object type: '" + object_type + "'");
+      }
+
+      world.object_list[key]->setName(key);
+      std::cerr << "  " + key << std::endl;
+    } catch(nlohmann::detail::type_error &e) {
+      std::cerr << "Objects" << std::endl;
+      throw(e);
+    }
+  }
+
+  std::cerr << "Reading lights" << std::endl;
+  for(auto light : conf["lights"]) {
+    try {
+      std::string key = light.get<std::string>();
+      std::cerr << "Adding light referense to object '" << key << "'" << std::endl;
+
+      world.lights.add(world.object_list[key]);
+
+      std::cerr << "  " + key << std::endl;
+    } catch(nlohmann::detail::type_error &e) {
+      std::cerr << "Lights" << std::endl;
+      throw(e);
+    }
+  }
+
+  return world;
 }
 
 int main(int argc, char *argv[])
@@ -381,9 +333,9 @@ int main(int argc, char *argv[])
   HittableList objects;
   HittableList lights;
 
-  std::ifstream camera_file("../camera.json", std::ifstream::in);
-  json camera_conf;
   try {
+    std::ifstream camera_file("../camera.json", std::ifstream::in);
+    json camera_conf;
     camera_file >> camera_conf;
 
     look_from = Point3(camera_conf["look_from"][0], camera_conf["look_from"][1], camera_conf["look_from"][2]);
@@ -394,22 +346,34 @@ int main(int argc, char *argv[])
     aperture = camera_conf["aperture"];
     time0 = camera_conf["time_start"];
     time1 = camera_conf["time_end"];
-  } catch(nlohmann::detail::parse_error e) {
+
+    width = camera_conf["image"]["width"].get<int>();
+    height = camera_conf["image"]["height"].get<int>();
+
+  } catch(nlohmann::detail::parse_error &e) {
     std::cout << "No camera file found, using default values" << std::endl;
   }
 
-  world = cornell_box();
+  try {
+    std::ifstream world_file("../world.json", std::ifstream::in);
+    json world_conf;
+    world_file >> world_conf;
+    world = build_world(world_conf);
+  } catch(nlohmann::detail::parse_error &e) {
+    //std::cout << "No world file found, using default values" << std::endl;
+    //world = cornell_box();
+    std::cerr << "No world file found (" << e.what() << ")" << std::endl;
+    return -1;
+  }
   objects = world.objects;
   lights = world.lights;
+  background = world.background;
 
-  background = Color(0, 0, 0);
-  width = 600;
-  height = 600;
   aspect_ratio = (double)width / height;
 
   max_depth = 25;
   min_samples_per_pixel = 100;
-  max_samples_per_pixel = 100;
+  max_samples_per_pixel = 100000;
   pincer_limit = 0.000005;
 
   // Camera
