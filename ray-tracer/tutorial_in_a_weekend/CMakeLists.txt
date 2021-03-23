@@ -41,7 +41,10 @@ add_executable(raytracer
   src/moving_sphere.hpp
   src/perlin.hpp
   src/ray.hpp
-  src/rtw_stb_image.hpp
+  src/stb_image.h
+  src/stb_image_write.h
+  src/rtw_stb_image.cpp
+  src/stb_image_impl.cpp
   src/rtweekend.hpp
   src/sphere.hpp
   src/texture.hpp

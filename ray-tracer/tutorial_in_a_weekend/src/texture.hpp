@@ -6,7 +6,7 @@
 #include "rtweekend.hpp"
 
 #include "perlin.hpp"
-#include "rtw_stb_image.hpp"
+#include "stb_image.h"
 
 
 class Texture {

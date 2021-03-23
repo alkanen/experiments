@@ -1,8 +1,4 @@
 {
-    "image": {
-        "width": 1200,
-        "height": 800
-    },
     "look_from": [13, 2, 3],
     "look_at": [0, 0, 0],
     "up": [0, 1, 0],

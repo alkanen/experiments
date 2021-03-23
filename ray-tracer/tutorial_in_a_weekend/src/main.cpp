@@ -13,7 +13,6 @@
 
 #include <nlohmann/json.hpp>
 
-#define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image.h"
 #include "stb_image_write.h"
 
@@ -308,24 +307,24 @@ int main(int argc, char *argv[])
     filename = const_cast<char*>("test.png");
   }
   // Image properties
-  auto aspect_ratio = 16.0 / 9.0;
-  int width = 1920/5;
-  int height = 1080/5;
-  int min_samples_per_pixel = 100;
-  int max_samples_per_pixel = 100000000;
-  int max_depth = 25;
-  double pincer_limit = 0.0001; // 0.000005;
+  double aspect_ratio;
+  int width;
+  int height;
+  int min_samples_per_pixel;
+  int max_samples_per_pixel;
+  int max_depth;
+  double pincer_limit;
   Color background(0, 0, 0);
 
   // Camera settings
-  auto look_from = Point3(13, 2, 3);
-  auto look_at = Point3(0, 0, 0);
-  auto vup = Vec3(0, 1, 0);
-  auto vfov = 20.0;
-  auto dist_to_focus = 10.0;
-  auto aperture = .1;
-  auto time0 = 0.0;
-  auto time1 = 1.0;
+  Point3 look_from;
+  Point3 look_at;
+  Vec3 vup;
+  double vfov;
+  double dist_to_focus;
+  double aperture;
+  double time0;
+  double time1;
 
   // World
   World world;
@@ -345,14 +344,30 @@ int main(int argc, char *argv[])
     aperture = camera_conf["aperture"];
     time0 = camera_conf["time_start"];
     time1 = camera_conf["time_end"];
-
-    width = camera_conf["image"]["width"].get<int>();
-    height = camera_conf["image"]["height"].get<int>();
-
   } catch(nlohmann::detail::parse_error &e) {
-    std::cout << "No camera file found, using default values" << std::endl;
+    std::cout << "No camera file found (" << e.what() << ")" << std::endl;
+    return -1;
   }
 
+  try {
+    std::ifstream render_file("../render.json", std::ifstream::in);
+    json render_conf;
+    render_file >> render_conf;
+
+    width = render_conf["width"].get<int>();
+    height = render_conf["height"].get<int>();
+    min_samples_per_pixel = render_conf["min_samples_per_pixel"].get<int>();
+    max_samples_per_pixel = render_conf["max_samples_per_pixel"].get<int>();
+    max_depth = render_conf["max_depth"].get<int>();
+    pincer_limit = render_conf["pincer_limit"].get<double>();
+
+
+  } catch(nlohmann::detail::parse_error &e) {
+    std::cout << "No render file found (" << e.what() << ")" << std::endl;
+    return -1;
+  }
+
+  aspect_ratio = (double)width / height;
   try {
     std::ifstream world_file("../world.json", std::ifstream::in);
     json world_conf;
@@ -366,13 +381,6 @@ int main(int argc, char *argv[])
   objects = world.objects;
   lights = world.lights;
   background = world.background;
-
-  aspect_ratio = (double)width / height;
-
-  max_depth = 25;
-  min_samples_per_pixel = 100;
-  max_samples_per_pixel = 10000;
-  pincer_limit = 0.000005;
 
   // Camera
   Camera cam(look_from, look_at, vup, vfov, aspect_ratio, aperture, dist_to_focus, time0, time1);
