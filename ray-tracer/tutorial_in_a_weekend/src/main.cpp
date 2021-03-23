@@ -170,9 +170,9 @@ World build_world(json &conf)
       world.texture_list[key] = new_texture;
 
       world.texture_list[key]->setName(key);
-      std::cerr << "  " + key << std::endl;
+      // std::cerr << "  " + key << std::endl;
     } catch(nlohmann::detail::type_error &e) {
-      std::cerr << "Texture" << std::endl;
+      std::cerr << "Texture failed" << std::endl;
       throw(e);
     }
   }
@@ -215,9 +215,9 @@ World build_world(json &conf)
       }
 
       world.material_list[key]->setName(key);
-      std::cerr << "  " + key << std::endl;
+      // std::cerr << "  " + key << std::endl;
     } catch(nlohmann::detail::type_error &e) {
-      std::cerr << "Material" << std::endl;
+      std::cerr << "Material failed" << std::endl;
       throw(e);
     }
   }
@@ -246,8 +246,6 @@ World build_world(json &conf)
         world.object_list[key] = new Sphere(
           center, radius, material
         );
-
-        world.objects.add(world.object_list[key]);
       } else if( object_type == "MovingSphere" ) {
         auto c = obj["center0"];
         auto x = c[0].get<double>();
@@ -275,9 +273,10 @@ World build_world(json &conf)
       }
 
       world.object_list[key]->setName(key);
-      std::cerr << "  " + key << std::endl;
+      world.objects.add(world.object_list[key]);
+      // std::cerr << "  " + key << std::endl;
     } catch(nlohmann::detail::type_error &e) {
-      std::cerr << "Objects" << std::endl;
+      std::cerr << "Objects failed" << std::endl;
       throw(e);
     }
   }
@@ -286,13 +285,13 @@ World build_world(json &conf)
   for(auto light : conf["lights"]) {
     try {
       std::string key = light.get<std::string>();
-      std::cerr << "Adding light referense to object '" << key << "'" << std::endl;
+      // std::cerr << "Adding light referense to object '" << key << "'" << std::endl;
 
       world.lights.add(world.object_list[key]);
 
-      std::cerr << "  " + key << std::endl;
+      // std::cerr << "  " + key << std::endl;
     } catch(nlohmann::detail::type_error &e) {
-      std::cerr << "Lights" << std::endl;
+      std::cerr << "Lights failed" << std::endl;
       throw(e);
     }
   }
@@ -360,11 +359,10 @@ int main(int argc, char *argv[])
     world_file >> world_conf;
     world = build_world(world_conf);
   } catch(nlohmann::detail::parse_error &e) {
-    //std::cout << "No world file found, using default values" << std::endl;
-    //world = cornell_box();
     std::cerr << "No world file found (" << e.what() << ")" << std::endl;
     return -1;
   }
+
   objects = world.objects;
   lights = world.lights;
   background = world.background;
@@ -373,7 +371,7 @@ int main(int argc, char *argv[])
 
   max_depth = 25;
   min_samples_per_pixel = 100;
-  max_samples_per_pixel = 100000;
+  max_samples_per_pixel = 10000;
   pincer_limit = 0.000005;
 
   // Camera
@@ -435,7 +433,7 @@ int main(int argc, char *argv[])
 	     is_nan(tmpc1) || is_nan(tmpc2)
 	     || tmpc1.length() > MAX_COLOR || tmpc2.length() > MAX_COLOR
 	     ) {
-	    std::cerr << "Color either NaN or too large: " << tmpc1 << ", " << tmpc2 << std::endl;
+	    // std::cerr << "Color either NaN or too large: " << tmpc1 << ", " << tmpc2 << std::endl;
 	    s -= 2;
 	    continue;
 	  }
@@ -455,17 +453,14 @@ int main(int argc, char *argv[])
           auto u = (i + random_double()) / ((double)width - 1);
           auto v = (j + random_double()) / ((double)height - 1);
 
-          // Ray r = cam.get_ray(u, v);
-          // pixel_color += ray_color(r, objects, lights, max_depth);
-          // Ray calculation contains some randomness
           auto tmpc1 = ray_color(cam.get_ray(u, v), background, objects, lights, max_depth);
           auto tmpc2 = ray_color(cam.get_ray(u, v), background, objects, lights, max_depth);
 
 	  if(
 	     is_nan(tmpc1) || is_nan(tmpc2)
 	     || tmpc1.length() > MAX_COLOR || tmpc2.length() > MAX_COLOR
-	     ) {
-	    std::cerr << "Color either NaN or too large: " << tmpc1 << ", " << tmpc2 << std::endl;
+             ) {
+	    // std::cerr << "Color either NaN or too large: " << tmpc1 << ", " << tmpc2 << std::endl;
 	    s -= 2;
 	    continue;
 	  }

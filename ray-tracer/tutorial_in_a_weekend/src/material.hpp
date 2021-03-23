@@ -1,6 +1,7 @@
 #ifndef MATERIAL_H
 #define MATERIAL_H
 
+#include <iostream>
 #include <memory>
 
 #include "rtweekend.hpp"
@@ -35,10 +36,18 @@ public:
   {
     return Color(0, 0, 0);
   }
+  virtual void serialize(std::ostream &out) const {
+    out << "Unknown material type";
+  }
 
 public:
   std::string name;
 };
+inline std::ostream& operator<<(std::ostream &out, const Material &m)
+{
+  m.serialize(out);
+  return out;
+}
 
 class Lambertian : public Material {
 public:
@@ -61,6 +70,13 @@ public:
   ) const {
     auto cosine = dot(rec.normal, unit_vector(scattered.direction()));
     return cosine < 0 ? 0 : cosine/pi;
+  }
+
+  virtual void serialize(std::ostream &out) const override {
+    out
+      << "Lambertian("
+      << *albedo
+      << ")";
   }
 
 public:

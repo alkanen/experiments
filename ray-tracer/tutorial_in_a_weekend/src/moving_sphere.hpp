@@ -5,6 +5,7 @@
 
 #include "hittable.hpp"
 #include "aabb.hpp"
+#include "material.hpp"
 
 class MovingSphere : public Hittable {
 public:
@@ -23,7 +24,25 @@ public:
     time1(time1),
     radius(radius),
     material(material)
-  {}
+  {
+    /*
+    std::cerr
+      << "MovingSphere("
+      << center0
+      << ", "
+      << center1
+      << ", "
+      << time0
+      << ", "
+      << time1
+      << ", "
+      << radius
+      << ", "
+      << *material
+      << ")"
+      << std::endl;
+    */
+  }
 
   virtual bool hit(
     const Ray &ray, double t_min, double t_max, HitRecord &rec
