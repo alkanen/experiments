@@ -1,7 +1,11 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
+#include <nlohmann/json.hpp>
+
 #include "rtweekend.hpp"
+
+using json = nlohmann::json;
 
 class Camera {
 public:
@@ -10,6 +14,51 @@ public:
     Point3 look_at,
     Vec3 vup,
     double vfov, // Vertical field-of-view in degrees
+    double aspect_ratio,
+    double aperture,
+    double focus_dist,
+    double time0 = 0,
+    double time1 = 0
+  ) {
+    setup(look_from, look_at, vup, vfov, aspect_ratio, aperture, focus_dist, time0, time1);
+  }
+
+  Camera(json &conf, double aspect_ratio) {
+    try {
+      setup(
+        Point3(conf["look_from"][0], conf["look_from"][1], conf["look_from"][2]),
+        Point3(conf["look_at"][0], conf["look_at"][1], conf["look_at"][2]),
+        Vec3(conf["up"][0], conf["up"][1], conf["up"][2]),
+        conf["vertical_fov"],
+        aspect_ratio,
+        conf["dist_to_focus"],
+        conf["aperture"],
+        conf["time_start"],
+        conf["time_end"]
+      );
+    } catch(nlohmann::detail::parse_error &e) {
+      std::cerr << "Unable to parse camera parameters: " << e.what() << std::endl;
+      throw(e);
+    }
+  }
+
+  Ray get_ray(double s, double t) const {
+    Vec3 rd = lens_radius * random_in_unit_disk();
+    Vec3 offset = u * rd.x() + v * rd.y();
+
+    return Ray(
+      origin + offset,
+      lower_left_corner + s * horizontal + t * vertical - origin - offset,
+      random_double(time0, time1)
+    );
+  }
+
+private:
+    void setup(
+    Point3 look_from,
+    Point3 look_at,
+    Vec3 vup,
+    double vfov,
     double aspect_ratio,
     double aperture,
     double focus_dist,
@@ -34,17 +83,6 @@ public:
 
     this->time0 = time0;
     this->time1 = time1;
-  }
-
-  Ray get_ray(double s, double t) const {
-    Vec3 rd = lens_radius * random_in_unit_disk();
-    Vec3 offset = u * rd.x() + v * rd.y();
-
-    return Ray(
-      origin + offset,
-      lower_left_corner + s * horizontal + t * vertical - origin - offset,
-      random_double(time0, time1)
-    );
   }
 
 private:

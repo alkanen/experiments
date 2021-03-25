@@ -27,20 +27,24 @@ endif()
 project(RayTracerTutorial)
 
 add_executable(raytracer
-  src/main.cpp
   src/aabb.hpp
+  src/aabb.cpp
   src/aarect.hpp
   src/box.hpp
   src/bvh.hpp
   src/camera.hpp
   src/color.hpp
+  src/color.cpp
   src/constant_medium.hpp
   src/hittable.hpp
+  src/hittable.cpp
   src/hittable_list.hpp
+  src/hittable_list.cpp
   src/material.hpp
   src/moving_sphere.hpp
   src/perlin.hpp
   src/ray.hpp
+  src/ray.cpp
   src/stb_image.h
   src/stb_image_write.h
   src/rtw_stb_image.cpp
@@ -49,8 +53,17 @@ add_executable(raytracer
   src/sphere.hpp
   src/texture.hpp
   src/vec3.hpp
+  src/vec3.cpp
   src/onb.hpp
+  src/onb.cpp
   src/pdf.hpp
+  src/world.hpp
+  src/world.cpp
+  src/ray_color.hpp
+  src/ray_color.cpp
+  src/render.hpp
+  src/render.cpp
+  src/main.cpp
 )
 
 # Link against the dependency of Intel TBB (for parallel C++17 algorithms)
