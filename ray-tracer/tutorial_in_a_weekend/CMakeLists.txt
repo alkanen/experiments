@@ -31,6 +31,7 @@ add_executable(raytracer
   src/aabb.hpp
   src/aabb.cpp
   src/aarect.hpp
+  src/aarect.cpp
   src/box.hpp
   src/bvh.hpp
   src/camera.hpp
