@@ -29,6 +29,7 @@ project(RayTracerTutorial)
 add_executable(raytracer
   src/main.cpp
   src/aabb.hpp
+  src/aabb.cpp
   src/aarect.hpp
   src/box.hpp
   src/bvh.hpp
@@ -39,10 +40,13 @@ add_executable(raytracer
   src/constants.hpp
   src/constant_medium.hpp
   src/hittable.hpp
+  src/hittable.cpp
   src/hittable_list.hpp
   src/material.hpp
+  src/material.cpp
   src/moving_sphere.hpp
   src/perlin.hpp
+  src/perlin.cpp
   src/ray.hpp
   src/ray.cpp
   src/stb_image.h
@@ -53,10 +57,13 @@ add_executable(raytracer
   src/rtweekend.cpp
   src/sphere.hpp
   src/texture.hpp
+  src/texture.cpp
   src/vec3.hpp
   src/vec3.cpp
   src/onb.hpp
+  src/onb.cpp
   src/pdf.hpp
+  src/pdf.cpp
 )
 
 # Link against the dependency of Intel TBB (for parallel C++17 algorithms)

@@ -17,17 +17,16 @@
 #include "stb_image_write.h"
 
 #include "rtweekend.hpp"
+#include "ray.hpp"
+#include "vec3.hpp"
 #include "color.hpp"
 #include "hittable_list.hpp"
-#include "bvh.hpp"
-#include "box.hpp"
 #include "sphere.hpp"
 #include "moving_sphere.hpp"
-#include "aarect.hpp"
 #include "camera.hpp"
 #include "material.hpp"
-#include "constant_medium.hpp"
 #include "pdf.hpp"
+#include "texture.hpp"
 
 #define SAMPLE_CLAMP 100
 #undef SAMPLE_CLAMP

@@ -2,6 +2,8 @@
 
 #include <iostream>
 
+#include "rtweekend.hpp"
+
 Color clamp_color(const Color& color, double maxval)
 {
   auto ratio = maxval / color.length();

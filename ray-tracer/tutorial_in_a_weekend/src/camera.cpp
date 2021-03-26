@@ -3,6 +3,7 @@
 #include "camera.hpp"
 #include "ray.hpp"
 #include "vec3.hpp"
+#include "rtweekend.hpp"
 
 Camera::Camera(
   Point3 look_from,

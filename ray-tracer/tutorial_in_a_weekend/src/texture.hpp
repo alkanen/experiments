@@ -3,51 +3,33 @@
 
 #include <iostream>
 
-#include "rtweekend.hpp"
-
-#include "perlin.hpp"
 #include "stb_image.h"
+
+#include "color.hpp"
+#include "perlin.hpp"
 
 
 class Texture {
 public:
-  void setName(std::string n) {name = n;}
+  void setName(std::string n);
   virtual Color value(double u, double v, const Point3 &p) const = 0;
-  virtual ~Texture() {};
-  virtual void serialize(std::ostream &out) const {
-    out << "Unknown texture type";
-  }
+  virtual ~Texture();
+  virtual void serialize(std::ostream &out) const;
 
 public:
   std::string name;
 };
-inline std::ostream& operator<<(std::ostream &out, const Texture &t)
-{
-  t.serialize(out);
-  return out;
-}
+std::ostream& operator<<(std::ostream &out, const Texture &t);
+
 
 class SolidColor : public Texture {
 public:
-  SolidColor() {}
-  SolidColor(Color c) : color_value(c) {}
+  SolidColor();
+  SolidColor(Color c);
+  SolidColor(double red, double green, double blue);
 
-  SolidColor(double red, double green, double blue)
-    : SolidColor(Color(red, green, blue)) {}
-
-  virtual Color value(double u, double v, const Vec3 &p) const override {
-    return color_value;
-  }
-  virtual void serialize(std::ostream &out) const override {
-    out
-      << "SolidColor("
-      << color_value[0]
-      << ", "
-      << color_value[1]
-      << ", "
-      << color_value[2]
-      << ")";
-  }
+  virtual Color value(double u, double v, const Vec3 &p) const override;
+  virtual void serialize(std::ostream &out) const override;
 
 public:
   Color color_value;
@@ -56,29 +38,14 @@ public:
 
 class CheckerTexture : public Texture {
 public:
-  CheckerTexture() {}
+  CheckerTexture();
+  CheckerTexture(Color c1, Color c2);
+  CheckerTexture(Texture *even, Texture *odd);
 
-  CheckerTexture(Color c1, Color c2)
-    : even(new SolidColor(c1)), odd(new SolidColor(c2)) {}
-  CheckerTexture(Texture *even, Texture *odd)
-    : even(even), odd(odd) {}
+  virtual Color value(double u, double v, const Point3 &p) const override;
 
-  virtual Color value(double u, double v, const Point3 &p) const override
-  {
-    auto sines = sin(10*p.x())*sin(10*p.y())*sin(10*p.z());
-    if (sines < 0)
-      return odd->value(u, v, p);
-    else
-      return even->value(u, v, p);
-  }
-  virtual void serialize(std::ostream &out) const override {
-    out
-      << "CheckerTexture("
-      << (*even)
-      << ", "
-      << (*odd)
-      << ")";
-  }
+  virtual void serialize(std::ostream &out) const override;
+
 public:
   Texture *even;
   Texture *odd;
@@ -87,13 +54,10 @@ public:
 class NoiseTexture : public Texture
 {
 public:
-  NoiseTexture() {}
-  NoiseTexture(double sc) : scale(sc) {}
+  NoiseTexture();
+  NoiseTexture(double sc);
 
-  virtual Color value(double u, double v, const Point3& p) const override {
-    return Color(1, 1, 1) * 0.5 * (1.0 + sin(scale * p.z() + 10*noise.turb(p)));
-    //return Color(1, 1, 1) * noise.turb(scale * p);
-  }
+  virtual Color value(double u, double v, const Point3& p) const override;
 
 public:
   Perlin noise;
@@ -104,49 +68,11 @@ class ImageTexture : public Texture {
 public:
   const static int bytes_per_pixel = 3;
 
-  ImageTexture()
-    : data(nullptr), width(0), height(0), bytes_per_scanline(0) {}
+  ImageTexture();
+  ImageTexture(const char *filename);
+  ~ImageTexture();
 
-  ImageTexture(const char *filename) {
-    auto components_per_pixel = bytes_per_pixel;
-
-    data = stbi_load(
-      filename, &width, &height, &components_per_pixel, components_per_pixel
-    );
-
-    if(!data) {
-      std::cerr << "ERROR: Could not load texture image file '" << filename << "'.\n";
-      width = height = 0;
-    }
-
-    bytes_per_scanline = bytes_per_pixel * width;
-  }
-
-  ~ImageTexture() {
-    delete data;
-  }
-
-  virtual Color value(double u, double v, const Vec3 &p) const override {
-    // If we have no texture data, then return solid cyan as a debugging aid.
-    if (data == nullptr)
-      return Color(0, 1, 1);
-
-    // Clamp input texture coordinates to [0,1] x [1,0]
-    u = clamp(u, 0.0, 1.0);
-    v = 1.0 - clamp(v, 0.0, 1.0);  // Flip V to image coordinates
-
-    auto i = static_cast<int>(u * width);
-    auto j = static_cast<int>(v * height);
-
-    // Clamp integer mapping, since actual coordinates should be less than 1.0
-    if (i >= width)  i = width-1;
-    if (j >= height) j = height-1;
-
-    const auto color_scale = 1.0 / 255.0;
-    auto pixel = data + j*bytes_per_scanline + i*bytes_per_pixel;
-
-    return Color(color_scale * pixel[0], color_scale * pixel[1], color_scale * pixel[2]);
-  }
+  virtual Color value(double u, double v, const Vec3 &p) const override;
 
 private:
   unsigned char *data;

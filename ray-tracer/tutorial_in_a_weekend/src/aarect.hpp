@@ -1,7 +1,8 @@
 #ifndef AARECT_HPP
 #define AARECT_HPP
 
-#include "rtweekend.hpp"
+#include "vec3.hpp"
+#include "ray.hpp"
 
 #include "hittable.hpp"
 

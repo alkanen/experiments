@@ -1,7 +1,7 @@
 #ifndef COLOR_H
 #define COLOR_H
 
-#include "rtweekend.hpp"
+#include "vec3.hpp"
 
 using Color = Vec3;    // RGB color
 
