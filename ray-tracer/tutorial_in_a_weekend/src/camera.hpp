@@ -15,37 +15,21 @@ public:
     double focus_dist,
     double time0 = 0,
     double time1 = 0
-  ) {
-    auto theta = degrees_to_radians(vfov);
-    auto h = tan(theta/2);
-    auto viewport_height = 2.0 * h;
-    auto viewport_width = aspect_ratio * viewport_height;
+  );
+  Ray get_ray(double s, double t) const;
 
-    w = unit_vector(look_from - look_at);
-    u = unit_vector(cross(vup, w));
-    v = cross(w, u);
-
-    origin = look_from;
-    horizontal = focus_dist * viewport_width * u;
-    vertical = focus_dist * viewport_height * v;
-    lower_left_corner = origin - horizontal/2 - vertical/2 - focus_dist * w;
-
-    lens_radius = aperture / 2;
-
-    this->time0 = time0;
-    this->time1 = time1;
-  }
-
-  Ray get_ray(double s, double t) const {
-    Vec3 rd = lens_radius * random_in_unit_disk();
-    Vec3 offset = u * rd.x() + v * rd.y();
-
-    return Ray(
-      origin + offset,
-      lower_left_corner + s * horizontal + t * vertical - origin - offset,
-      random_double(time0, time1)
-    );
-  }
+private:
+  void setup(
+    Point3 look_from,
+    Point3 look_at,
+    Vec3 vup,
+    double vfov,
+    double aspect_ratio,
+    double aperture,
+    double focus_dist,
+    double time0,
+    double time1
+  );
 
 private:
   Point3 origin;

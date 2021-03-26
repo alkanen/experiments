@@ -33,7 +33,9 @@ add_executable(raytracer
   src/box.hpp
   src/bvh.hpp
   src/camera.hpp
+  src/camera.cpp
   src/color.hpp
+  src/color.cpp
   src/constants.hpp
   src/constant_medium.hpp
   src/hittable.hpp
@@ -47,6 +49,7 @@ add_executable(raytracer
   src/rtw_stb_image.cpp
   src/stb_image_impl.cpp
   src/rtweekend.hpp
+  src/rtweekend.cpp
   src/sphere.hpp
   src/texture.hpp
   src/vec3.hpp
