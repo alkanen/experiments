@@ -20,8 +20,7 @@ Camera::Camera(
   setup(look_from, look_at, vup, vfov, aspect_ratio, aperture, focus_dist, time0, time1);
 }
 
-/*
-Camera::Camera(nlohmann::json &conf, double aspect_ratio)
+Camera::Camera(const nlohmann::json &conf, double aspect_ratio)
 {
   setup(
     Point3(conf["look_from"][0], conf["look_from"][1], conf["look_from"][2]),
@@ -29,13 +28,12 @@ Camera::Camera(nlohmann::json &conf, double aspect_ratio)
     Vec3(conf["up"][0], conf["up"][1], conf["up"][2]),
     conf["vertical_fov"],
     aspect_ratio,
-    conf["dist_to_focus"],
     conf["aperture"],
+    conf["dist_to_focus"],
     conf["time_start"],
     conf["time_end"]
   );
 }
-*/
 
 void Camera::setup(
   Point3 look_from,

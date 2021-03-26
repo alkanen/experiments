@@ -1,8 +1,12 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
+#include <nlohmann/json.hpp>
+
 #include "ray.hpp"
 #include "vec3.hpp"
+
+using json = nlohmann::json;
 
 class Camera {
 public:
@@ -17,6 +21,8 @@ public:
     double time0 = 0,
     double time1 = 0
   );
+  Camera(const json &conf, double aspect_ratio);
+
   Ray get_ray(double s, double t) const;
 
 private:

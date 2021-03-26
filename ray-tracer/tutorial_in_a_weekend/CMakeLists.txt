@@ -6,7 +6,7 @@ endif()
 
 if(LINUX)
   #set(CMAKE_CXX_FLAGS "-O0 -Wall -g -DDEBUG")
-  set(CMAKE_CXX_FLAGS "-Ofast")
+  set(CMAKE_CXX_FLAGS "-Ofast -g")
 endif()
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -73,6 +73,11 @@ add_executable(raytracer
   src/stb_image_write.h
   src/stb_image_impl.cpp
   src/rtw_stb_image.cpp
+
+  src/camera.hpp
+  src/camera.cpp
+  src/render.hpp
+  src/render.cpp
 )
 
 # Link against the dependency of Intel TBB (for parallel C++17 algorithms)
