@@ -62,15 +62,17 @@ add_executable(raytracer
   src/box.cpp
   src/hittable_list.hpp
   src/hittable_list.cpp
+  src/bvh.hpp
+  src/bvh.cpp
+  src/moving_sphere.hpp
+  src/moving_sphere.cpp
+  src/constant_medium.hpp
+  src/constant_medium.cpp
 
   src/stb_image.h
   src/stb_image_write.h
   src/stb_image_impl.cpp
   src/rtw_stb_image.cpp
-
-  src/bvh.hpp
-  src/moving_sphere.hpp
-  src/constant_medium.hpp
 )
 
 # Link against the dependency of Intel TBB (for parallel C++17 algorithms)
