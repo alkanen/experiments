@@ -34,6 +34,7 @@ add_executable(raytracer
   src/bvh.hpp
   src/camera.hpp
   src/color.hpp
+  src/constants.hpp
   src/constant_medium.hpp
   src/hittable.hpp
   src/hittable_list.hpp
@@ -49,6 +50,7 @@ add_executable(raytracer
   src/sphere.hpp
   src/texture.hpp
   src/vec3.hpp
+  src/vec3.cpp
   src/onb.hpp
   src/pdf.hpp
 )
