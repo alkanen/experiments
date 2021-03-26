@@ -74,6 +74,8 @@ add_executable(raytracer
   src/stb_image_impl.cpp
   src/rtw_stb_image.cpp
 
+  src/world.hpp
+  src/world.cpp
   src/camera.hpp
   src/camera.cpp
   src/render.hpp
