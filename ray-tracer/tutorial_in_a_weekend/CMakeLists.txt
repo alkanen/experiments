@@ -6,7 +6,7 @@ endif()
 
 if(LINUX)
   #set(CMAKE_CXX_FLAGS "-O0 -Wall -g -DDEBUG")
-  set(CMAKE_CXX_FLAGS "-O3")
+  set(CMAKE_CXX_FLAGS "-Ofast")
 endif()
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -28,35 +28,26 @@ project(RayTracerTutorial)
 
 add_executable(raytracer
   src/main.cpp
+
   src/aabb.hpp
   src/aabb.cpp
   src/aarect.hpp
   src/aarect.cpp
-  src/box.hpp
-  src/bvh.hpp
   src/camera.hpp
   src/camera.cpp
   src/color.hpp
   src/color.cpp
   src/constants.hpp
-  src/constant_medium.hpp
   src/hittable.hpp
   src/hittable.cpp
-  src/hittable_list.hpp
   src/material.hpp
   src/material.cpp
-  src/moving_sphere.hpp
   src/perlin.hpp
   src/perlin.cpp
   src/ray.hpp
   src/ray.cpp
-  src/stb_image.h
-  src/stb_image_write.h
-  src/rtw_stb_image.cpp
-  src/stb_image_impl.cpp
   src/rtweekend.hpp
   src/rtweekend.cpp
-  src/sphere.hpp
   src/texture.hpp
   src/texture.cpp
   src/vec3.hpp
@@ -65,6 +56,21 @@ add_executable(raytracer
   src/onb.cpp
   src/pdf.hpp
   src/pdf.cpp
+  src/sphere.hpp
+  src/sphere.cpp
+  src/box.hpp
+  src/box.cpp
+  src/hittable_list.hpp
+  src/hittable_list.cpp
+
+  src/stb_image.h
+  src/stb_image_write.h
+  src/stb_image_impl.cpp
+  src/rtw_stb_image.cpp
+
+  src/bvh.hpp
+  src/moving_sphere.hpp
+  src/constant_medium.hpp
 )
 
 # Link against the dependency of Intel TBB (for parallel C++17 algorithms)
