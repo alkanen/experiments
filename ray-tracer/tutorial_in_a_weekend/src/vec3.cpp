@@ -5,7 +5,7 @@ double random_double();
 double random_double(double min, double max);
 
 Vec3::Vec3()
-  : e{0,0,0}
+  : e{0, 0, 0}
 {
 }
 

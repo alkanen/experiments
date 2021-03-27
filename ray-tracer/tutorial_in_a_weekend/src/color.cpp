@@ -13,7 +13,7 @@ Color clamp_color(const Color& color, double maxval)
   return color * ratio;
 }
 
-bool is_nan(Color &color)
+bool is_nan(const Color &color)
 {
   return (color[0] != color[0]) || (color[1] != color[1]) || (color[2] != color[2]);
 }

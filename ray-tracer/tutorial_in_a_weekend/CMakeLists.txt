@@ -80,8 +80,8 @@ add_executable(raytracer
   src/world.cpp
   src/camera.hpp
   src/camera.cpp
-  src/render.hpp
-  src/render.cpp
+  src/render_params.hpp
+  src/render_params.cpp
   src/ray_color.hpp
   src/ray_color.cpp
 )

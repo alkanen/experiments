@@ -1,6 +1,7 @@
 {
-    "width": 40,
-    "height": 40,
+    "width": 400,
+    "height": 400,
+    "sample_grid_size": 2,
     "min_samples_per_pixel": 100,
     "max_samples_per_pixel": 1000000,
     "max_depth": 25,
