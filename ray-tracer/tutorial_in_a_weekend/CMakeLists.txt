@@ -73,6 +73,8 @@ add_executable(raytracer
   src/stb_image_write.h
   src/stb_image_impl.cpp
   src/rtw_stb_image.cpp
+  src/png.hpp
+  src/png.cpp
 
   src/world.hpp
   src/world.cpp
@@ -80,6 +82,8 @@ add_executable(raytracer
   src/camera.cpp
   src/render.hpp
   src/render.cpp
+  src/ray_color.hpp
+  src/ray_color.cpp
 )
 
 # Link against the dependency of Intel TBB (for parallel C++17 algorithms)

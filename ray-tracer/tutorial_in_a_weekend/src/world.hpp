@@ -1,3 +1,6 @@
+#ifndef WORLD_HPP
+#define WORLD_HPP
+
 #include <map>
 #include <string>
 
@@ -25,3 +28,5 @@ private:
   std::map<std::string, Material*> material_list;
   std::map<std::string, Hittable*> object_list;
 };
+
+#endif
