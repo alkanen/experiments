@@ -78,3 +78,13 @@ Ray Camera::get_ray(double s, double t) const
     random_double(time0, time1)
   );
 }
+
+double Camera::start_time(void) const
+{
+  return time0;
+}
+
+double Camera::end_time(void) const
+{
+  return time1;
+}

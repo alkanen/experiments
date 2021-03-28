@@ -5,15 +5,17 @@
 
 #include <nlohmann/json.hpp>
 
+#include "camera.hpp"
 #include "color.hpp"
 #include "hittable_list.hpp"
 #include "hittable.hpp"
+#include "bvh.hpp"
 #include "texture.hpp"
 #include "material.hpp"
 #include "sphere.hpp"
 #include "moving_sphere.hpp"
 
-World::World(json &conf)
+World::World(json &conf, Camera &camera)
 {
   std::cerr << "Reading background color" << std::endl;
   auto bg = conf["background"];
@@ -161,13 +163,23 @@ World::World(json &conf)
       }
 
       object_list[key]->setName(key);
-      objects.add(object_list[key]);
+      // objects.add(object_list[key]);
       // std::cerr << "  " + key << std::endl;
     } catch(nlohmann::detail::type_error &e) {
       std::cerr << "Objects failed" << std::endl;
       throw(e);
     }
   }
+
+  std::vector<Hittable*> tmp_objects;
+  for( auto it = object_list.begin(); it != object_list.end(); ++it ) {
+    tmp_objects.push_back( it->second );
+  }
+  // What the hell should the time values be set to here?
+  object_list["global_bvh"] = new BvhNode(
+    tmp_objects, camera.start_time(), camera.end_time()
+  );
+  objects.add(object_list["global_bvh"]);
 
   std::cerr << "Reading lights" << std::endl;
   for(auto light : conf["lights"]) {

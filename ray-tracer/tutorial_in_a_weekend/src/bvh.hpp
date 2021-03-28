@@ -13,8 +13,9 @@ public:
   BvhNode(const HittableList &list, double time0, double time1);
   BvhNode(
     const std::vector<Hittable*> &src_objects,
-    size_t start, size_t end, double time0, double time1
+    double time0, double time1
   );
+  BvhNode(Hittable *left, Hittable *right, double time0, double time1);
 
   virtual bool hit(
     const Ray &r, double t_min, double t_max, HitRecord &rec

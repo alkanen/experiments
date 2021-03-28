@@ -132,7 +132,7 @@ int main(int argc, char *argv[])
     std::cerr << "No world file found (" << e.what() << ")" << std::endl;
     return -1;
   }
-  World world(world_conf);
+  World world(world_conf, cam);
 
   // Image data
   // End result

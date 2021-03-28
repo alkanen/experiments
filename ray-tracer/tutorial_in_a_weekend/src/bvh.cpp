@@ -10,47 +10,73 @@ BvhNode::BvhNode()
 }
 
 BvhNode::BvhNode(const HittableList &list, double time0, double time1)
-  : BvhNode(list.objects, 0, list.objects.size(), time0, time1)
+  : BvhNode(list.objects, time0, time1)
 {
+}
+
+BvhNode::BvhNode(Hittable *left_obj, Hittable *right_obj, double time0, double time1)
+  : left(left_obj)
+  , right(right_obj)
+{
+  Aabb box_left, box_right;
+
+  left->bounding_box(time0, time1, box_left);
+  right->bounding_box(time0, time1, box_right);
+
+  box = surrounding_box(box_left, box_right);
 }
 
 BvhNode::BvhNode(
   const std::vector<Hittable*> &src_objects,
-  size_t start, size_t end, double time0, double time1
+  double time0, double time1
 )
 {
   auto objects = src_objects; // Create a modifiable array of the source scene objects
+  size_t num_objs = src_objects.size();
+  double volumes[num_objs][num_objs];
 
-  int axis = random_int(0, 2);
-  auto comparator = (axis == 0) ?
-    box_x_compare
-    : (axis == 1) ? box_y_compare
-    : box_z_compare;
+  while(num_objs > 2) {
+    double min_value = 1e20;
+    size_t min_i = num_objs, min_j = num_objs;
+    for(size_t i = 0; i < num_objs; i++) {
+      volumes[i][i] = 0;
 
-  size_t object_span = end - start;
+      for(size_t j = i+1; j < num_objs; j++) {
+        Aabb i_box, j_box;
+        objects[i]->bounding_box(time0, time1, i_box);
+        objects[j]->bounding_box(time0, time1, j_box);
+        volumes[i][j] = surrounding_box(i_box, j_box).volume();
 
-  if (object_span == 1) {
-    left = right = objects[start];
-  } else if (object_span == 2) {
-    if (comparator(objects[start], objects[start+1])) {
-      left = objects[start];
-      right = objects[start+1];
-    } else {
-      left = objects[start+1];
-      right = objects[start];
+        if(volumes[i][j] < min_value) {
+          min_value = volumes[i][j];
+          min_i = i;
+          min_j = j;
+        }
+      }
     }
-  } else {
-    std::sort(objects.begin() + start, objects.begin() + end, comparator);
 
-    auto mid = start + object_span/2;
-    left = new BvhNode(objects, start, mid, time0, time1);
-    right = new BvhNode(objects, mid, end, time0, time1);
+    auto obj_i = objects[min_i];
+    auto obj_j = objects[min_j];
+
+    objects.erase(objects.begin() + min_j);
+    objects.erase(objects.begin() + min_i);
+
+    objects.push_back(new BvhNode(obj_i, obj_j, time0, time1));
+
+    num_objs = objects.size();
+  }
+
+  if(num_objs == 2) {
+    left = objects[0];
+    right = objects[1];
+  } else {
+    left = objects[0];
+    right = objects[1];
   }
 
   Aabb box_left, box_right;
-
   if(
-    !left->bounding_box (time0, time1, box_left)
+    !left->bounding_box(time0, time1, box_left)
     || !right->bounding_box(time0, time1, box_right)
   )
     std::cerr << "No bounding box in bvh_node constructor.\n";

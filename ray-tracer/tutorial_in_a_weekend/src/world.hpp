@@ -6,6 +6,7 @@
 
 #include <nlohmann/json.hpp>
 
+#include "camera.hpp"
 #include "color.hpp"
 #include "texture.hpp"
 #include "material.hpp"
@@ -16,7 +17,7 @@ using json = nlohmann::json;
 
 class World {
 public:
-  World(json &conf);
+  World(json &conf, Camera &camera);
 
 public:
   Color background;

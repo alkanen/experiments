@@ -1,5 +1,7 @@
 #include "aabb.hpp"
 
+#include <iostream>
+
 Aabb::Aabb()
 {
 }
@@ -36,6 +38,15 @@ bool Aabb::hit(const Ray &r, double t_min, double t_max) const
   return true;
 }
 
+double Aabb::volume(void) const
+{
+  auto dx = fabs(minimum.x() - maximum.x());
+  auto dy = fabs(minimum.y() - maximum.y());
+  auto dz = fabs(minimum.z() - maximum.z());
+
+  return dx * dy * dz;
+}
+
 Aabb surrounding_box(Aabb box0, Aabb box1)
 {
   Point3 small(
@@ -53,3 +64,31 @@ Aabb surrounding_box(Aabb box0, Aabb box1)
   return Aabb(small, big);
 }
 
+Aabb intersection_box(const Aabb &box0, const Aabb &box1)
+{
+  Point3 small(
+    fmax(box0.min().x(), box1.min().x()),
+    fmax(box0.min().y(), box1.min().y()),
+    fmax(box0.min().z(), box1.min().z())
+  );
+
+  Point3 big(
+    fmin(box0.max().x(), box1.max().x()),
+    fmin(box0.max().y(), box1.max().y()),
+    fmin(box0.max().z(), box1.max().z())
+  );
+
+  // Any length < 0 -> no intersection
+  for(int i = 0; i < 3; i++ ) {
+    if(big[i] < small[i])
+      return Aabb(Point3(0, 0, 0), Point3(0, 0, 0));
+  }
+
+  return Aabb(small, big);
+}
+
+std::ostream& operator<<(std::ostream &out, const Aabb &box)
+{
+  out << "Aabb(" << box.minimum << ", " << box.maximum << ")" << std::endl;
+  return out;
+}

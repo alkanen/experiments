@@ -25,6 +25,9 @@ public:
 
   Ray get_ray(double s, double t) const;
 
+  double start_time(void) const;
+  double end_time(void) const;
+
 private:
   void setup(
     Point3 look_from,

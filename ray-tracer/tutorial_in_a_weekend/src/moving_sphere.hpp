@@ -33,6 +33,10 @@ public:
   double time1;
   double radius;
   Material *material;
+
+  Aabb cached_bb;
+  double cached_t0;
+  double cached_t1;
 };
 
 #endif
