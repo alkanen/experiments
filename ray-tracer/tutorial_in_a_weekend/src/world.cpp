@@ -81,13 +81,17 @@ World::World(json &conf, Camera &camera)
       }
 
       if( material_type == "Lambertian" ) {
-        auto tex = mtl["texture"].get<std::string>();
-
-        material_list[key] = new Lambertian(texture_list[tex]);
+        auto tex_name = mtl["texture"].get<std::string>();
+	auto tex = texture_list.find(tex_name);
+	if( tex == texture_list.end() )
+	  throw("Unknown texture type: '" + tex_name + "'");
+	material_list[key] = new Lambertian(tex->second);
       } else if( material_type == "DiffuseLight" ) {
-        auto tex = mtl["texture"].get<std::string>();
-
-        material_list[key] = new DiffuseLight(texture_list[tex]);
+        auto tex_name = mtl["texture"].get<std::string>();
+	auto tex = texture_list.find(tex_name);
+	if( tex == texture_list.end() )
+	  throw("Unknown texture type: '" + tex_name + "'");
+        material_list[key] = new DiffuseLight(tex->second);
       } else if( material_type == "Metal" ) {
         auto red = mtl["red"].get<double>();
         auto green = mtl["green"].get<double>();
@@ -132,9 +136,14 @@ World::World(json &conf, Camera &camera)
         auto z = c[2].get<double>();
         auto center = Point3(x, y, z);
         auto radius = obj["radius"].get<double>();
-        auto material = material_list[obj["material"].get<std::string>()];
+
+	auto mat_name = obj["material"].get<std::string>();
+	auto material = material_list.find(mat_name);
+	if( material == material_list.end() )
+	  throw("Unknown material type: '" + mat_name + "'");
+
         object_list[key] = new Sphere(
-          center, radius, material
+          center, radius, material->second
         );
       } else if( object_type == "MovingSphere" ) {
         auto c = obj["center0"];
@@ -154,9 +163,13 @@ World::World(json &conf, Camera &camera)
         auto time0 = obj["time0"].get<double>();
         auto time1 = obj["time1"].get<double>();
 
-        auto material = material_list[obj["material"].get<std::string>()];
+	auto mat_name = obj["material"].get<std::string>();
+	auto material = material_list.find(mat_name);
+	if( material == material_list.end() )
+	  throw("Unknown material type: '" + mat_name + "'");
+
         object_list[key] = new MovingSphere(
-          center0, center1, time0, time1, radius, material
+          center0, center1, time0, time1, radius, material->second
         );
       } else {
         throw("Unknown object type: '" + object_type + "'");
@@ -176,7 +189,7 @@ World::World(json &conf, Camera &camera)
     tmp_objects.push_back( it->second );
   }
   // What the hell should the time values be set to here?
-  object_list["global_bvh"] = new BvhNode(
+  object_list["global_bvh"] = new Bvh(
     tmp_objects, camera.start_time(), camera.end_time()
   );
   objects.add(object_list["global_bvh"]);

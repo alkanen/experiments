@@ -2,6 +2,7 @@
 // https://raytracing.github.io/books/RayTracingInOneWeekend.html
 
 #include <cstdlib>
+#include <chrono>
 #include <algorithm>
 #include <execution>
 #include <vector>
@@ -39,6 +40,7 @@ int sample_pixel(
   DataType &data1,
   DataType &data2,
   CountType &counter,
+  int pos,
   int i,
   int j,
   RenderParams &render_params,
@@ -47,35 +49,34 @@ int sample_pixel(
   World &world
 )
 {
-  auto pos = ((int64_t)render_params.height - j - 1) * render_params.width + i;
+  // auto pos = ((int64_t)render_params.height - j - 1) * render_params.width + i;
   int count = 0;
   double grid_step = 1.0 / render_params.sample_grid_size;
 
   for(int y = 0; y < render_params.sample_grid_size; y++ ) {
     for(int x = 0; x < render_params.sample_grid_size; x++ ) {
-      auto x_offs = x + random_double() * grid_step;
-      auto y_offs = y + random_double() * grid_step;
-      auto u = (i + x_offs) / ((double)render_params.width - 1);
-      auto v = (j + y_offs) / ((double)render_params.height - 1);
+      auto x_offs = (x + random_double()) / render_params.sample_grid_size;
+      auto y_offs = (y + random_double()) / render_params.sample_grid_size;
+      auto u = (i + x_offs) / (double)render_params.width;
+      auto v = (j + y_offs) / (double)render_params.height;
       Color tmpc1 = ray_color(
                       cam.get_ray(u, v),
                       world, render_params.max_depth
                     );
 
-      x_offs = x + random_double() * grid_step;
-      y_offs = y + random_double() * grid_step;
-      u = (i + x_offs) / ((double)render_params.width - 1);
-      v = (j + y_offs) / ((double)render_params.height - 1);
+      if (is_nan(tmpc1) || tmpc1.length() > MAX_COLOR)
+        continue;
+
+      x_offs = (x + random_double()) / render_params.sample_grid_size;
+      y_offs = (y + random_double()) / render_params.sample_grid_size;
+      u = (i + x_offs) / (double)render_params.width;
+      v = (j + y_offs) / (double)render_params.height;
       Color tmpc2 = ray_color(
                       cam.get_ray(u, v),
                       world, render_params.max_depth
                     );
 
-      if(
-       is_nan(tmpc1 + tmpc2)
-       || tmpc1.length() > MAX_COLOR
-       || tmpc2.length() > MAX_COLOR
-      )
+      if (is_nan(tmpc2) || tmpc2.length() > MAX_COLOR)
         continue;
 
 #ifdef SAMPLE_CLAMP
@@ -85,10 +86,11 @@ int sample_pixel(
       data1[pos] += tmpc1;
       data2[pos] += tmpc2;
 #endif
-      counter[pos] += 2;
       count += 2;
     }
   }
+
+  counter[pos] += count;
   return count;
 }
 
@@ -144,107 +146,121 @@ int main(int argc, char *argv[])
   // Sample counter
   CountType counter(data.size());
   std::vector<RenderSegment> segments;
-  for(int i = 0; i < render_params.height; ++i) {
-    segments.push_back(
-      RenderSegment(
-        0, i, render_params.width-1, i
-      )
-    );
+  int segment_height = 10;
+  int segment_width = segment_height;
+  for (int y = 0; y < render_params.height; y += segment_height) {
+    for (int x = 0; x < render_params.width; x += segment_width) {
+      segments.push_back(
+        RenderSegment(
+          x, y,
+          std::min(x + segment_width - 1, render_params.width - 1),
+          std::min(y + segment_height - 1, render_params.height - 1)
+        )
+      );
+    }
   }
-
+  size_t num_segments = segments.size();
   // Render
-  std::cerr << "Begin" << std::endl;
-  int64_t line_count = 0;
+  std::cerr << "Begin sampling " << num_segments << " segments" << std::endl;
+  int64_t segment_count = 0;
   int64_t sample_count = 0;
   int64_t samples_reached_max = 0;
-  int64_t next_save = render_params.height / 5;
+  int64_t pixel_count = 0;
+  int save_divider = 25;
+  int64_t next_save = num_segments / save_divider;
   std::mutex mutex;
+  auto t1 = std::chrono::high_resolution_clock::now();
   for_each(
     std::execution::par_unseq,
     segments.begin(),
     segments.end(),
     [
       &render_params,
+      &num_segments,
       &world,
       &data,
       &data1,
       &data2,
       &counter,
       &cam,
-      &line_count,
+      &segment_count,
       &sample_count,
+      &pixel_count,
       &next_save,
+      &save_divider,
       &mutex,
       &samples_reached_max,
       &filename
     ] (auto &&segment) {
-      for (int j = segment.y1; j <= segment.y2; ++j ) {
-        int64_t line_sample_count = 0;
-        int64_t local_reached_max = 0;
+      int64_t segment_sample_count = 0;
+      int64_t local_reached_max = 0;
+      for (int j = segment.y1; j <= segment.y2; ++j) {
         for (int i = segment.x1; i <= segment.x2; ++i) {
           // Pre-emptively increase max counter
           local_reached_max++;
-          auto pos = ((int64_t)render_params.height - j - 1) * render_params.width + i;
+          int pos = ((int)render_params.height - j - 1) * render_params.width + i;
 
-          for(int s = 0; s < render_params.max_samples_per_pixel; ) {
+          for (int s = 0; s < render_params.max_samples_per_pixel; ) {
             int num_samples = sample_pixel(
               data1, data2,
               counter,
+              pos,
               i, j,
               render_params, segment,
               cam, world
             );
+            s += num_samples;
 
-            if( s > render_params.min_samples_per_pixel ) {
+            if (s >= render_params.min_samples_per_pixel) {
               // Check if the variance between the two sample buffers are good enough
-              auto c1 = data1[pos];
-              auto c2 = data2[pos];
-              auto dist = fabs((c1.x() - c2.x()) + (c1.y() - c2.y()) + (c1.z() - c2.z()));
+              const auto& c1 = data1[pos];
+              const auto& c2 = data2[pos];
+              auto dist = fabs((c1.x() - c2.x()) + fabs(c1.y() - c2.y()) + fabs(c1.z() - c2.z()));
               auto total = (c1.x() + c2.x()) + (c1.y() + c2.y()) + (c1.z() + c2.z());
-              if(dist / total < render_params.pincer_limit) {
+              if (dist / total < render_params.pincer_limit) {
                 // Restore max counter
                 local_reached_max--;
                 break;
               }
             }
-
-            s += num_samples;
           }
 
-          line_sample_count += counter[pos];
+          segment_sample_count += counter[pos];
         }
+      }
 
-        // Critical section
-        {
-          const std::lock_guard<std::mutex> lock(mutex);
-          ++line_count;
-          sample_count += line_sample_count;
-          std::cerr << "\rScanline " << line_count << "/" << render_params.height << std::flush;
-          samples_reached_max += local_reached_max;
-          std::cerr << "\rScanline "
-                    << line_count
-                    << "/"
-                    << render_params.height
-                    << " "
-                    << samples_reached_max
-                    << " ceilings hit and "
-                    << ((double)sample_count / (render_params.width * line_count))
-                    << " samples per pixel"
-                    << std::flush;
-          if (line_count > next_save) {
-            for(size_t i = 0; i < data.size(); i++) {
-              if(counter[i])
-                data[i] = (data1[i] + data2[i]) / counter[i];
-              else
-                data[i] = Color();
-            }
-            save_png(data, render_params.width, render_params.height, filename);
-            next_save += render_params.height / 5;
+      // Critical section
+      {
+        const std::lock_guard<std::mutex> lock(mutex);
+        ++segment_count;
+        sample_count += segment_sample_count;
+	    pixel_count += segment.pixels;
+        std::cerr << "       \rSegment " << segment_count << "/" << num_segments << std::flush;
+        samples_reached_max += local_reached_max;
+        std::cerr << "       \rSegment "
+                  << segment_count
+                  << "/"
+                  << num_segments
+                  << " "
+                  << samples_reached_max
+                  << " ceilings hit and "
+                  << (sample_count / (double)(pixel_count))
+                  << " samples per pixel"
+                  << std::flush;
+        if (next_save && segment_count > next_save) {
+          for(size_t i = 0; i < data.size(); i++) {
+            if(counter[i])
+              data[i] = (data1[i] + data2[i]) / static_cast<double>(counter[i]);
+            else
+              data[i] = Color();
           }
+          save_png(data, render_params.width, render_params.height, filename);
+          next_save += num_segments / save_divider;
         }
       }
     }
   );
+  auto t2 = std::chrono::high_resolution_clock::now();
   std::cerr << "\nRender complete." << std::endl;
   std::cerr
     << "Average "
@@ -252,11 +268,18 @@ int main(int argc, char *argv[])
     << " samples per pixel"
     << std::endl;
 
+  int ms = static_cast<int>(std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count());
+  int minutes = int(ms / 60000);
+  ms -= minutes * 60000;
+  int seconds = int(ms / 1000);
+  ms -= seconds * 1000;
+  std::cerr << "Total time: " << minutes << ":" << seconds << "." << ms << std::endl;
+
   // Dump image
   std::cerr << "Saving image to '" << filename << "'" << std::endl;
   for(size_t i = 0; i < data.size(); i++) {
     if(counter[i])
-      data[i] = (data1[i] + data2[i]) / counter[i];
+      data[i] = (data1[i] + data2[i]) / static_cast<double>(counter[i]);
     else
       data[i] = Color();
   }

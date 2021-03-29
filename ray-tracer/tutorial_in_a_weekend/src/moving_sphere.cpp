@@ -72,16 +72,17 @@ bool MovingSphere::bounding_box(double time0, double time1, Aabb &output_box) co
 {
   //std::cerr << "MovingSphere::bounding_box(" << time0 << ", " << time1 << ")" << std::endl;
   if(
-     time0 >= cached_t0 and time0 <= cached_t1
-     and
-     time1 >= cached_t0 and time1 <= cached_t1
+     time0 >= cached_t0 && time0 <= cached_t1
+     &&
+     time1 >= cached_t0 && time1 <= cached_t1
   ) {
-  // if(cached_t0 <= time0 && cached_t1 <= time1) {
     //std::cerr << "  cache hit: " << cached_bb << std::endl;
     output_box = cached_bb;
     return true;
   }
 
+  //std::cerr << "Cache failed, genering new bounding box" << std::endl;
+  
   Aabb box0(
     center(time0) - Vec3(radius, radius, radius),
     center(time0) + Vec3(radius, radius, radius)
