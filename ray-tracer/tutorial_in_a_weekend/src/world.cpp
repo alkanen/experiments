@@ -176,7 +176,7 @@ World::World(json &conf, Camera &camera)
     tmp_objects.push_back( it->second );
   }
   // What the hell should the time values be set to here?
-  object_list["global_bvh"] = new BvhNode(
+  object_list["global_bvh"] = new Bvh(
     tmp_objects, camera.start_time(), camera.end_time()
   );
   objects.add(object_list["global_bvh"]);
