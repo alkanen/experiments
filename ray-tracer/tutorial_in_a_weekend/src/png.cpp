@@ -9,7 +9,7 @@
 #include "rtweekend.hpp"
 #include "color.hpp"
 
-void save_png(std::vector<Color> &data, const int width, const int height, const char *filename)
+void save_png(std::vector<Color> &data, const int width, const int height, const std::string &filename)
 {
   const int64_t pitch = width * 3;
   uint8_t *pixels;
@@ -27,6 +27,6 @@ void save_png(std::vector<Color> &data, const int width, const int height, const
     index++[pixels] = static_cast<int>(256 * clamp(sqrt(b), 0.0, 0.999));
   }
 
-  stbi_write_png( filename, width, height, STBI_rgb, pixels, (int)pitch );
+  stbi_write_png( filename.c_str(), width, height, STBI_rgb, pixels, (int)pitch );
   delete[] pixels;
 }

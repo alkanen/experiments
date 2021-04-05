@@ -15,6 +15,7 @@
 
 #include "camera.hpp"
 #include "render_params.hpp"
+#include "config.hpp"
 #include "png.hpp"
 
 #include "rtweekend.hpp"
@@ -96,17 +97,28 @@ int sample_pixel(
 
 int main(int argc, char *argv[])
 {
-  char *filename;
+  std::string config_filename;
   if(argc >= 2) {
-    filename = argv[1];
+    config_filename = argv[1];
   } else {
-    filename = const_cast<char*>("test.png");
+    config_filename = "../config.json";
   }
+
+  // Config parameters
+  json config_conf;
+  try {
+    std::ifstream config_file(config_filename, std::ifstream::in);
+    config_file >> config_conf;
+  } catch(nlohmann::detail::parse_error &e) {
+    std::cerr << "No config file found (" << e.what() << ")" << std::endl;
+    return -1;
+  }
+  Config config(config_conf);
 
   // Render parameters
   json render_conf;
   try {
-    std::ifstream render_file("../render.json", std::ifstream::in);
+    std::ifstream render_file(config.render_config, std::ifstream::in);
     render_file >> render_conf;
   } catch(nlohmann::detail::parse_error &e) {
     std::cout << "No render file found (" << e.what() << ")" << std::endl;
@@ -117,7 +129,7 @@ int main(int argc, char *argv[])
   // Camera
   json camera_conf;
   try {
-    std::ifstream camera_file("../camera.json", std::ifstream::in);
+    std::ifstream camera_file(config.camera_config, std::ifstream::in);
     camera_file >> camera_conf;
   } catch(nlohmann::detail::parse_error &e) {
     std::cout << "No camera file found (" << e.what() << ")" << std::endl;
@@ -128,7 +140,7 @@ int main(int argc, char *argv[])
   // World
   json world_conf;
   try {
-    std::ifstream world_file("../world.json", std::ifstream::in);
+    std::ifstream world_file(config.world_config, std::ifstream::in);
     world_file >> world_conf;
   } catch(nlohmann::detail::parse_error &e) {
     std::cerr << "No world file found (" << e.what() << ")" << std::endl;
@@ -146,8 +158,8 @@ int main(int argc, char *argv[])
   // Sample counter
   CountType counter(data.size());
   std::vector<RenderSegment> segments;
-  int segment_height = 10;
-  int segment_width = segment_height;
+  int segment_height = config.segment_height;
+  int segment_width = config.segment_width;
   for (int y = 0; y < render_params.height; y += segment_height) {
     for (int x = 0; x < render_params.width; x += segment_width) {
       segments.push_back(
@@ -166,8 +178,10 @@ int main(int argc, char *argv[])
   int64_t sample_count = 0;
   int64_t samples_reached_max = 0;
   int64_t pixel_count = 0;
-  int save_divider = 25;
-  int64_t next_save = num_segments / save_divider;
+  int save_divider = config.saves_per_render;
+  int64_t next_save = 0;
+  if(save_divider)
+    next_save = num_segments / save_divider;
   std::mutex mutex;
   auto t1 = std::chrono::high_resolution_clock::now();
   for_each(
@@ -176,6 +190,7 @@ int main(int argc, char *argv[])
     segments.end(),
     [
       &render_params,
+      &config,
       &num_segments,
       &world,
       &data,
@@ -189,8 +204,7 @@ int main(int argc, char *argv[])
       &next_save,
       &save_divider,
       &mutex,
-      &samples_reached_max,
-      &filename
+      &samples_reached_max
     ] (auto &&segment) {
       int64_t segment_sample_count = 0;
       int64_t local_reached_max = 0;
@@ -211,7 +225,7 @@ int main(int argc, char *argv[])
             );
             s += num_samples;
 
-            if (s >= render_params.min_samples_per_pixel) {
+            if (render_params.min_samples_per_pixel < s) {
               // Check if the variance between the two sample buffers are good enough
               const auto& c1 = data1[pos];
               const auto& c2 = data2[pos];
@@ -247,14 +261,14 @@ int main(int argc, char *argv[])
                   << (sample_count / (double)(pixel_count))
                   << " samples per pixel"
                   << std::flush;
-        if (next_save && segment_count > next_save) {
+        if (next_save && !config.output_image.empty() && segment_count > next_save) {
           for(size_t i = 0; i < data.size(); i++) {
             if(counter[i])
               data[i] = (data1[i] + data2[i]) / static_cast<double>(counter[i]);
             else
               data[i] = Color();
           }
-          save_png(data, render_params.width, render_params.height, filename);
+          save_png(data, render_params.width, render_params.height, config.output_image);
           next_save += num_segments / save_divider;
         }
       }
@@ -276,14 +290,16 @@ int main(int argc, char *argv[])
   std::cerr << "Total time: " << minutes << ":" << seconds << "." << ms << std::endl;
 
   // Dump image
-  std::cerr << "Saving image to '" << filename << "'" << std::endl;
-  for(size_t i = 0; i < data.size(); i++) {
-    if(counter[i])
-      data[i] = (data1[i] + data2[i]) / static_cast<double>(counter[i]);
-    else
-      data[i] = Color();
+  if(!config.output_image.empty()) {
+    std::cerr << "Saving image to '" << config.output_image << "'" << std::endl;
+    for(size_t i = 0; i < data.size(); i++) {
+      if(counter[i])
+	data[i] = (data1[i] + data2[i]) / static_cast<double>(counter[i]);
+      else
+	data[i] = Color();
+    }
+    save_png(data, render_params.width, render_params.height, config.output_image);
   }
-  save_png(data, render_params.width, render_params.height, filename);
 
   std::cerr << "\nDone." << std::endl;
 
