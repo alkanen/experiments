@@ -12,6 +12,8 @@
 #include "bvh.hpp"
 #include "texture.hpp"
 #include "material.hpp"
+#include "aarect.hpp"
+#include "box.hpp"
 #include "sphere.hpp"
 #include "moving_sphere.hpp"
 
@@ -62,7 +64,7 @@ World::World(json &conf, Camera &camera)
       texture_list[key]->setName(key);
       // std::cerr << "  " + key << std::endl;
     } catch(nlohmann::detail::type_error &e) {
-      std::cerr << "Texture failed" << std::endl;
+      std::cerr << "Texture failed" << e.what() << std::endl;
       throw(e);
     }
   }
@@ -82,15 +84,15 @@ World::World(json &conf, Camera &camera)
 
       if( material_type == "Lambertian" ) {
         auto tex_name = mtl["texture"].get<std::string>();
-	auto tex = texture_list.find(tex_name);
-	if( tex == texture_list.end() )
-	  throw("Unknown texture type: '" + tex_name + "'");
-	material_list[key] = new Lambertian(tex->second);
+        auto tex = texture_list.find(tex_name);
+        if( tex == texture_list.end() )
+          throw("Unknown texture type: '" + tex_name + "'");
+        material_list[key] = new Lambertian(tex->second);
       } else if( material_type == "DiffuseLight" ) {
         auto tex_name = mtl["texture"].get<std::string>();
-	auto tex = texture_list.find(tex_name);
-	if( tex == texture_list.end() )
-	  throw("Unknown texture type: '" + tex_name + "'");
+        auto tex = texture_list.find(tex_name);
+        if( tex == texture_list.end() )
+          throw("Unknown texture type: '" + tex_name + "'");
         material_list[key] = new DiffuseLight(tex->second);
       } else if( material_type == "Metal" ) {
         auto red = mtl["red"].get<double>();
@@ -111,15 +113,16 @@ World::World(json &conf, Camera &camera)
       material_list[key]->setName(key);
       // std::cerr << "  " + key << std::endl;
     } catch(nlohmann::detail::type_error &e) {
-      std::cerr << "Material failed" << std::endl;
+      std::cerr << "Material failed" << e.what() << std::endl;
       throw(e);
     }
   }
 
   std::cerr << "Reading objects" << std::endl;
   for(auto obj : conf["objects"]) {
+    std::string key;
     try {
-      std::string key = obj["name"];
+      key = obj["name"];
       std::string object_type = obj["type"];
 
       if( object_list.find(key) != object_list.end() ) {
@@ -137,10 +140,10 @@ World::World(json &conf, Camera &camera)
         auto center = Point3(x, y, z);
         auto radius = obj["radius"].get<double>();
 
-	auto mat_name = obj["material"].get<std::string>();
-	auto material = material_list.find(mat_name);
-	if( material == material_list.end() )
-	  throw("Unknown material type: '" + mat_name + "'");
+        auto mat_name = obj["material"].get<std::string>();
+        auto material = material_list.find(mat_name);
+        if( material == material_list.end() )
+          throw("Unknown material type: '" + mat_name + "'");
 
         object_list[key] = new Sphere(
           center, radius, material->second
@@ -163,13 +166,82 @@ World::World(json &conf, Camera &camera)
         auto time0 = obj["time0"].get<double>();
         auto time1 = obj["time1"].get<double>();
 
-	auto mat_name = obj["material"].get<std::string>();
-	auto material = material_list.find(mat_name);
-	if( material == material_list.end() )
-	  throw("Unknown material type: '" + mat_name + "'");
+        auto mat_name = obj["material"].get<std::string>();
+        auto material = material_list.find(mat_name);
+        if( material == material_list.end() )
+          throw("Unknown material type: '" + mat_name + "'");
 
         object_list[key] = new MovingSphere(
           center0, center1, time0, time1, radius, material->second
+        );
+      } else if( object_type == "XyRect" ) {
+        auto tl = obj["top_left"];
+        auto br = obj["bottom_right"];
+        auto x0 = tl[0].get<double>();
+        auto y0 = tl[1].get<double>();
+        auto x1 = br[0].get<double>();
+        auto y1 = br[1].get<double>();
+        auto k = obj["k"].get<double>();
+
+        auto mat_name = obj["material"].get<std::string>();
+        auto material = material_list.find(mat_name);
+        if( material == material_list.end() )
+          throw("Unknown material type: '" + mat_name + "'");
+
+        object_list[key] = new XyRect(
+          x0, x1, y0, y1, k, material->second
+        );
+      } else if( object_type == "XzRect" ) {
+        auto tl = obj["top_left"];
+        auto br = obj["bottom_right"];
+        auto x0 = tl[0].get<double>();
+        auto z0 = tl[1].get<double>();
+        auto x1 = br[0].get<double>();
+        auto z1 = br[1].get<double>();
+        auto k = obj["k"].get<double>();
+
+        auto mat_name = obj["material"].get<std::string>();
+        auto material = material_list.find(mat_name);
+        if( material == material_list.end() )
+          throw("Unknown material type: '" + mat_name + "'");
+
+        object_list[key] = new XzRect(
+          x0, x1, z0, z1, k, material->second
+        );
+      } else if( object_type == "YzRect" ) {
+        auto tl = obj["top_left"];
+        auto br = obj["bottom_right"];
+        auto y0 = tl[0].get<double>();
+        auto z0 = tl[1].get<double>();
+        auto y1 = br[0].get<double>();
+        auto z1 = br[1].get<double>();
+        auto k = obj["k"].get<double>();
+
+        auto mat_name = obj["material"].get<std::string>();
+        auto material = material_list.find(mat_name);
+        if( material == material_list.end() )
+          throw("Unknown material type: '" + mat_name + "'");
+
+        object_list[key] = new YzRect(
+          y0, y1, z0, z1, k, material->second
+        );
+      } else if( object_type == "Box" ) {
+        auto tl = obj["top_left"];
+        auto br = obj["bottom_right"];
+        auto x0 = tl[0].get<double>();
+        auto y0 = tl[1].get<double>();
+        auto z0 = tl[2].get<double>();
+        auto x1 = br[0].get<double>();
+        auto y1 = br[1].get<double>();
+        auto z1 = br[2].get<double>();
+
+        auto mat_name = obj["material"].get<std::string>();
+        auto material = material_list.find(mat_name);
+        if( material == material_list.end() )
+          throw("Unknown material type: '" + mat_name + "'");
+
+        object_list[key] = new Box(
+          Point3(x0, y0, z0), Point3(x1, y1, z1), material->second
         );
       } else {
         throw("Unknown object type: '" + object_type + "'");
@@ -179,7 +251,7 @@ World::World(json &conf, Camera &camera)
       // objects.add(object_list[key]);
       // std::cerr << "  " + key << std::endl;
     } catch(nlohmann::detail::type_error &e) {
-      std::cerr << "Objects failed" << std::endl;
+      std::cerr << "Object '" << key << "' failed: " << e.what() << std::endl;
       throw(e);
     }
   }
@@ -204,7 +276,7 @@ World::World(json &conf, Camera &camera)
 
       // std::cerr << "  " + key << std::endl;
     } catch(nlohmann::detail::type_error &e) {
-      std::cerr << "Lights failed" << std::endl;
+      std::cerr << "Lights failed" << e.what() << std::endl;
       throw(e);
     }
   }
