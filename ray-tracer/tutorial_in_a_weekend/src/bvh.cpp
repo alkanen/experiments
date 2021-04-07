@@ -36,9 +36,34 @@ bool BvhNode::hit(const Ray &r, double t_min, double t_max, HitRecord &rec) cons
     return false;
 
   bool hit_left = left->hit(r, t_min, t_max, rec);
-  bool hit_right = right->hit(r, t_min, hit_left ? rec.t : t_max, rec);
+  bool hit_right = false;
+  if(left != right)
+    hit_right = right->hit(r, t_min, hit_left ? rec.t : t_max, rec);
 
   return hit_left || hit_right;
+}
+
+std::ostream& operator<<(std::ostream &out, const BvhNode &node)
+{
+  out << &node;
+  return out;
+}
+
+std::ostream& operator<<(std::ostream &out, const BvhNode *node)
+{
+  if(node->leaf) {
+    out << "{\"box\": " << node->box << "}";
+  } else {
+    out << "{\"box\": "
+	<< node->box
+	<< ", \"left\": "
+	<< dynamic_cast<BvhNode*>(node->left)
+	<< ", \"right\": "
+	<< dynamic_cast<BvhNode*>(node->right)
+	<< "}";
+  }
+
+  return out;
 }
 
 Bvh::Bvh(const HittableList &list, double time0, double time1)
@@ -55,8 +80,6 @@ Bvh::Bvh(
   auto objects = src_objects;
   std::vector<Hittable*> leaves;
 
-  double volumes[num_objs][num_objs];
-
   while(num_objs > 0) {
     size_t min_i = num_objs, min_j = num_objs;
     if(num_objs == 1) {
@@ -65,16 +88,15 @@ Bvh::Bvh(
     } else {
       double min_value = 1e20;
       for(size_t i = 0; i < num_objs; i++) {
-        volumes[i][i] = 0;
-
         for(size_t j = i+1; j < num_objs; j++) {
           Aabb i_box, j_box;
           objects[i]->bounding_box(time0, time1, i_box);
           objects[j]->bounding_box(time0, time1, j_box);
-          volumes[i][j] = surrounding_box(i_box, j_box).volume();
 
-          if(volumes[i][j] < min_value) {
-            min_value = volumes[i][j];
+          double volume = surrounding_box(i_box, j_box).volume();
+
+          if(volume < min_value) {
+            min_value = volume;
             min_i = i;
             min_j = j;
           }
@@ -92,8 +114,6 @@ Bvh::Bvh(
       objects.clear();
     }
 
-    std::cerr << "Combining " << obj_i->name << " and " << obj_j->name << std::endl;
-
     leaves.push_back(new BvhNode(obj_i, obj_j, time0, time1, true));
     leaves.back()->setName(
       "{\"left\": \"" + obj_i->name + "\", \"right\": \"" + obj_j->name + "\"}"
@@ -102,17 +122,13 @@ Bvh::Bvh(
     num_objs = objects.size();
   }
 
-  std::cerr << "Leaves: " << leaves.size() << std::endl;
   objects = leaves;
   leaves.clear();
-  std::cerr << "cleared leaves: " << leaves.size() << std::endl;
 
   num_objs = objects.size();
-  std::cerr << "Objects: " << objects.size() << std::endl;
 
   int ctr = 1;
   while(num_objs > 1) {
-    std::cerr << "Pass " << ++ctr << " (" << objects.size() << ")" << std::endl;
     while(num_objs > 0) {
       size_t min_i = num_objs, min_j = num_objs;
       if(num_objs == 1) {
@@ -121,16 +137,15 @@ Bvh::Bvh(
       } else {
         double min_value = 1e20;
         for(size_t i = 0; i < num_objs; i++) {
-          volumes[i][i] = 0;
-
           for(size_t j = i+1; j < num_objs; j++) {
             Aabb i_box, j_box;
             objects[i]->bounding_box(time0, time1, i_box);
             objects[j]->bounding_box(time0, time1, j_box);
-            volumes[i][j] = surrounding_box(i_box, j_box).volume();
 
-            if(volumes[i][j] < min_value) {
-              min_value = volumes[i][j];
+            double volume = surrounding_box(i_box, j_box).volume();
+
+            if(volume) {
+              min_value = volume;
               min_i = i;
               min_j = j;
             }
@@ -140,8 +155,6 @@ Bvh::Bvh(
 
       auto obj_i = objects[min_i];
       auto obj_j = objects[min_j];
-
-      std::cerr << "Combining " << obj_i->name << " and " << obj_j->name << std::endl;
 
       if(num_objs > 1) {
         objects.erase(objects.begin() + min_j);
@@ -164,8 +177,8 @@ Bvh::Bvh(
   }
 
   // const size_t max_idx = 2 << ctr;
-  std::cerr << "Done, objects: " << objects.size() << std::endl;
   objects[0]->bounding_box(time0, time1, box);
+  //std::cerr << dynamic_cast<BvhNode*>(objects[0]) << std::endl;
 
   nodes.push_back(dynamic_cast<BvhNode*>(objects[0]));
 }

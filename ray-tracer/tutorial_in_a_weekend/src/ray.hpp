@@ -19,6 +19,7 @@ public:
 public:
   Point3 orig;
   Vec3 dir;
+  Vec3 invdir;
   double tm;
 };
 

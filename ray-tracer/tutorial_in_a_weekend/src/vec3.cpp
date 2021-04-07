@@ -95,7 +95,17 @@ bool Vec3::near_zero() const
 
 std::ostream& operator<<(std::ostream &out, const Vec3 &v)
 {
-  return out << "Vec3(" << v.e[0] << ", " << v.e[1] << ", " << v.e[2] << ")";
+  //return out << "Vec3(" << v.e[0] << ", " << v.e[1] << ", " << v.e[2] << ")";
+  out << "{"
+      << "\"x\": "
+      << v.e[0]
+      << ", \"y\": "
+      << v.e[1]
+      << ", \"z\": "
+      << v.e[2]
+      << "}";
+ 
+  return out;
 }
 
 Vec3 operator+(const Vec3 &u, const Vec3 &v)
@@ -126,6 +136,11 @@ Vec3 operator*(const Vec3 &v, double t)
 Vec3 operator/(Vec3 v, double t)
 {
   return (1/t) * v;
+}
+
+Vec3 operator/(double t, const Vec3& v)
+{
+  return Vec3(t / v.e[0], t / v.e[1], t / v.e[2]);
 }
 
 double dot(const Vec3 &u, const Vec3 &v)

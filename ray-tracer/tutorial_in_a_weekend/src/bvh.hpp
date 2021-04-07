@@ -27,6 +27,9 @@ public:
   bool leaf;
 };
 
+std::ostream& operator<<(std::ostream &out, const BvhNode &node);
+std::ostream& operator<<(std::ostream &out, const BvhNode *node);
+
 class Bvh : public Hittable {
 public:
   Bvh(const HittableList &list, double time0, double time1);

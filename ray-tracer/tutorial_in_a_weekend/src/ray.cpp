@@ -9,6 +9,7 @@ Ray::Ray()
 Ray::Ray(const Point3& origin, const Vec3& direction, double time)
   : orig(origin), dir(direction), tm(time)
 {
+  invdir = 1.0 / dir;
 }
 
 Point3 Ray::origin() const

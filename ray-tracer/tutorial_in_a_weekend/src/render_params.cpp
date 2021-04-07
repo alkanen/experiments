@@ -58,4 +58,6 @@ void RenderSegment::sort(void)
     y1 = y2;
     y2 = tmp;
   }
+
+  pixels = (x2 - x1 + 1) * (y2 - y1 + 1);
 }

@@ -25,13 +25,14 @@ Point3 Aabb::max() const
 bool Aabb::hit(const Ray &r, double t_min, double t_max) const
 {
   for (int a = 0; a < 3; a++) {
-    auto invD = 1.0f / r.direction()[a];
-    auto t0 = (min()[a] - r.origin()[a]) * invD;
-    auto t1 = (max()[a] - r.origin()[a]) * invD;
-    if (invD < 0.0f)
+    double inv_dir = r.invdir[a];
+    double o = r.orig[a];
+    auto t0 = (minimum[a] - o) * inv_dir;
+    auto t1 = (maximum[a] - o) * inv_dir;
+    if (inv_dir < 0.0f)
       std::swap(t0, t1);
-    t_min = t0 > t_min ? t0 : t_min;
-    t_max = t1 < t_max ? t1 : t_max;
+    t_min = std::max(t0, t_min);
+    t_max = std::min(t1, t_max);
     if (t_max <= t_min)
       return false;
   }
@@ -89,6 +90,12 @@ Aabb intersection_box(const Aabb &box0, const Aabb &box1)
 
 std::ostream& operator<<(std::ostream &out, const Aabb &box)
 {
-  out << "Aabb(" << box.minimum << ", " << box.maximum << ")" << std::endl;
+  //out << "Aabb(" << box.minimum << ", " << box.maximum << ")" << std::endl;
+  out << "{\"min\": "
+      << box.minimum
+      << ", \"max\": "
+      << box.maximum
+      << "}";
+
   return out;
 }

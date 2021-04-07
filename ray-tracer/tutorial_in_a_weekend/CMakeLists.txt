@@ -33,8 +33,6 @@ add_executable(raytracer
   src/aabb.cpp
   src/aarect.hpp
   src/aarect.cpp
-  src/camera.hpp
-  src/camera.cpp
   src/color.hpp
   src/color.cpp
   src/constants.hpp
@@ -68,6 +66,8 @@ add_executable(raytracer
   src/moving_sphere.cpp
   src/constant_medium.hpp
   src/constant_medium.cpp
+  src/ray_color.hpp
+  src/ray_color.cpp
 
   src/stb_image.h
   src/stb_image_write.h
@@ -76,14 +76,14 @@ add_executable(raytracer
   src/png.hpp
   src/png.cpp
 
-  src/world.hpp
-  src/world.cpp
   src/camera.hpp
   src/camera.cpp
+  src/config.hpp
+  src/config.cpp
   src/render_params.hpp
   src/render_params.cpp
-  src/ray_color.hpp
-  src/ray_color.cpp
+  src/world.hpp
+  src/world.cpp
 )
 
 # Link against the dependency of Intel TBB (for parallel C++17 algorithms)
