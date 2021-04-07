@@ -21,12 +21,17 @@ World::World(json &conf, Camera &camera)
 {
   std::cerr << "Reading background color" << std::endl;
   auto bg = conf["background"];
-  background = Color(
-    bg["red"].get<double>(),
-    bg["green"].get<double>(),
-    bg["blue"].get<double>()
-  );
-  std::cerr << "  " << background << std::endl;
+  if(bg["type"] == "SolidColor") {
+    background = new SolidColor(
+      Color(
+        bg["red"].get<double>(),
+        bg["green"].get<double>(),
+        bg["blue"].get<double>()
+      )
+    );
+  } else if(bg["type"] == "Image") {
+    background = new ImageTexture(bg["filename"].get<std::string>());
+  }
 
   std::cerr << "Reading textures" << std::endl;
   for(auto tx : conf["textures"]) {
@@ -280,4 +285,16 @@ World::World(json &conf, Camera &camera)
       throw(e);
     }
   }
+}
+
+Color World::background_hit(const Ray &ray)
+{
+  auto dir = unit_vector(ray.dir);
+  auto theta = acos(-dir.y());
+  auto phi = atan2(-dir.z(), dir.x()) + pi;
+
+  double u = phi / (2*pi);
+  double v = theta / pi;
+
+  return background->value(u, v, dir);
 }

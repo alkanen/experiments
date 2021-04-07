@@ -18,9 +18,10 @@ using json = nlohmann::json;
 class World {
 public:
   World(json &conf, Camera &camera);
+  Color background_hit(const Ray &ray);
 
 public:
-  Color background;
+  Texture *background;
   HittableList objects;
   HittableList lights;
 

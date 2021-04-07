@@ -1,5 +1,7 @@
 #include "texture.hpp"
 
+#include <string>
+
 #include "color.hpp"
 #include "rtweekend.hpp"
 
@@ -110,12 +112,12 @@ ImageTexture::ImageTexture()
 {
 }
 
-ImageTexture::ImageTexture(const char *filename)
+ImageTexture::ImageTexture(const std::string &filename)
 {
   auto components_per_pixel = bytes_per_pixel;
 
   data = stbi_load(
-    filename, &width, &height, &components_per_pixel, components_per_pixel
+    filename.c_str(), &width, &height, &components_per_pixel, components_per_pixel
   );
 
   if(!data) {

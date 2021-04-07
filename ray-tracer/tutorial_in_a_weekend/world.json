@@ -1,6 +1,10 @@
 {
     "name": "random_scene",
     "background": {
+        "name": "background",
+        "type": "Image",
+        "filename": "../360-degree_Panorama_of_the_Southern_Sky.jpg",
+        "projection": "equirectangular",
         "red": 0.7,
         "green": 0.8,
         "blue": 1.0

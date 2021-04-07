@@ -1,4 +1,5 @@
 #include "color.hpp"
+#include "material.hpp"
 #include "ray.hpp"
 #include "world.hpp"
 
@@ -9,7 +10,7 @@ Color ray_color(const Ray &r, World &world, int depth)
     return Color(0, 0, 0);
 
   if(!world.objects.hit(r, 0.001, infinity, rec))
-    return world.background;
+    return world.background_hit(r);
 
   ScatterRecord srec;
   //std::cerr << "ray_color before rec.material->emitted()" << std::endl;

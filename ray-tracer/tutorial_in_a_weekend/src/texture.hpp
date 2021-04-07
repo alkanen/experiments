@@ -2,6 +2,7 @@
 #define TEXTURE_HPP
 
 #include <iostream>
+#include <string>
 
 #include "stb_image.h"
 
@@ -69,7 +70,7 @@ public:
   const static int bytes_per_pixel = 3;
 
   ImageTexture();
-  ImageTexture(const char *filename);
+  ImageTexture(const std::string &filename);
   ~ImageTexture();
 
   virtual Color value(double u, double v, const Vec3 &p) const override;
