@@ -3,7 +3,7 @@
     "background": {
         "name": "background",
         "type": "Image",
-        "filename": "../360-degree_Panorama_of_the_Southern_Sky.jpg",
+        "filename": "../aqueduct.png",
         "projection": "equirectangular",
         "red": 0.7,
         "green": 0.8,
@@ -793,7 +793,7 @@
             "red": 0.7,
             "green": 0.6,
             "blue": 0.5,
-            "fuzz": 0.0
+            "fuzz": 0.1
         }
     ],
     "objects": [
@@ -810,8 +810,8 @@
         },
         {
             "name": "sphere_-5_-5",
-            "type": "MovingSphere",
-            "center0": [
+            "type": "Sphere",
+            "center": [
                 -4.416777314591792,
                 0.2,
                 4.356200694786327
@@ -827,9 +827,9 @@
             "material": "sphere_material_-5_-5"
         },
         {
-            "name": "sphere_-5_-4",
-            "type": "MovingSphere",
-            "center0": [
+            "name": "front_left_sphere_-5_-4",
+            "type": "Sphere",
+            "center": [
                 4.863287409572358,
                 0.2,
                 2.3292937970886007
@@ -846,8 +846,8 @@
         },
         {
             "name": "sphere_-5_-3",
-            "type": "MovingSphere",
-            "center0": [
+            "type": "Sphere",
+            "center": [
                 2.836036513826503,
                 0.2,
                 -0.7135144701161702
@@ -864,8 +864,8 @@
         },
         {
             "name": "sphere_-5_-2",
-            "type": "MovingSphere",
-            "center0": [
+            "type": "Sphere",
+            "center": [
                 -4.855030036722192,
                 0.2,
                 1.2275636683527873
@@ -882,8 +882,8 @@
         },
         {
             "name": "sphere_-5_-1",
-            "type": "MovingSphere",
-            "center0": [
+            "type": "Sphere",
+            "center": [
                 -4.541762916711916,
                 0.2,
                 -0.3304216326613164
@@ -900,8 +900,8 @@
         },
         {
             "name": "sphere_-5_0",
-            "type": "MovingSphere",
-            "center0": [
+            "type": "Sphere",
+            "center": [
                 -4.998701278308207,
                 0.2,
                 0.5211197522597182
@@ -918,8 +918,8 @@
         },
         {
             "name": "sphere_-5_1",
-            "type": "MovingSphere",
-            "center0": [
+            "type": "Sphere",
+            "center": [
                 -4.350739937060289,
                 0.2,
                 1.402088721023162
@@ -936,8 +936,8 @@
         },
         {
             "name": "sphere_-5_2",
-            "type": "MovingSphere",
-            "center0": [
+            "type": "Sphere",
+            "center": [
                 -4.2493632053603365,
                 0.2,
                 2.353335658181491
@@ -965,8 +965,8 @@
         },
         {
             "name": "sphere_-5_4",
-            "type": "MovingSphere",
-            "center0": [
+            "type": "Sphere",
+            "center": [
                 -4.4311454342193395,
                 0.2,
                 4.625444001119205
@@ -983,8 +983,8 @@
         },
         {
             "name": "sphere_-4_-5",
-            "type": "MovingSphere",
-            "center0": [
+            "type": "Sphere",
+            "center": [
                 -3.2512303132079228,
                 0.2,
                 -4.465213282973316
@@ -1001,8 +1001,8 @@
         },
         {
             "name": "sphere_-4_-4",
-            "type": "MovingSphere",
-            "center0": [
+            "type": "Sphere",
+            "center": [
                 -3.7172105323880396,
                 0.2,
                 -3.8795690181792404
@@ -1030,8 +1030,8 @@
         },
         {
             "name": "sphere_-4_-2",
-            "type": "MovingSphere",
-            "center0": [
+            "type": "Sphere",
+            "center": [
                 -3.887262722914617,
                 0.2,
                 -1.1315579469626174
@@ -1048,8 +1048,8 @@
         },
         {
             "name": "sphere_-4_-1",
-            "type": "MovingSphere",
-            "center0": [
+            "type": "Sphere",
+            "center": [
                 -3.60840356035726,
                 0.2,
                 -0.9072329362654253
@@ -1066,8 +1066,8 @@
         },
         {
             "name": "sphere_-4_0",
-            "type": "MovingSphere",
-            "center0": [
+            "type": "Sphere",
+            "center": [
                 -3.8324752327192666,
                 0.2,
                 0.32930240417605927
@@ -1084,8 +1084,8 @@
         },
         {
             "name": "sphere_-4_1",
-            "type": "MovingSphere",
-            "center0": [
+            "type": "Sphere",
+            "center": [
                 -3.927805567965626,
                 0.2,
                 1.5310442550680894
@@ -1102,8 +1102,8 @@
         },
         {
             "name": "sphere_-4_2",
-            "type": "MovingSphere",
-            "center0": [
+            "type": "Sphere",
+            "center": [
                 -3.1829455345643916,
                 0.2,
                 2.0255480636549628
@@ -1120,8 +1120,8 @@
         },
         {
             "name": "sphere_-4_3",
-            "type": "MovingSphere",
-            "center0": [
+            "type": "Sphere",
+            "center": [
                 -3.339113124246695,
                 0.2,
                 3.23379130983985
@@ -1138,8 +1138,8 @@
         },
         {
             "name": "sphere_-4_4",
-            "type": "MovingSphere",
-            "center0": [
+            "type": "Sphere",
+            "center": [
                 -3.6509555836276784,
                 0.2,
                 4.024073711143564
@@ -1156,8 +1156,8 @@
         },
         {
             "name": "sphere_-3_-5",
-            "type": "MovingSphere",
-            "center0": [
+            "type": "Sphere",
+            "center": [
                 -2.808308914385431,
                 0.2,
                 -4.9039757917289
@@ -1174,8 +1174,8 @@
         },
         {
             "name": "sphere_-3_-4",
-            "type": "MovingSphere",
-            "center0": [
+            "type": "Sphere",
+            "center": [
                 -2.276804010023935,
                 0.2,
                 -3.6607679488685827
@@ -1192,8 +1192,8 @@
         },
         {
             "name": "sphere_-3_-3",
-            "type": "MovingSphere",
-            "center0": [
+            "type": "Sphere",
+            "center": [
                 -2.477674529047581,
                 0.2,
                 -2.8282972063173717
@@ -1221,8 +1221,8 @@
         },
         {
             "name": "sphere_-3_-1",
-            "type": "MovingSphere",
-            "center0": [
+            "type": "Sphere",
+            "center": [
                 -2.2387466539478535,
                 0.2,
                 -0.1709531162388127
@@ -1239,8 +1239,8 @@
         },
         {
             "name": "sphere_-3_0",
-            "type": "MovingSphere",
-            "center0": [
+            "type": "Sphere",
+            "center": [
                 -2.5815853387239476,
                 0.2,
                 0.19407728888064688
@@ -1279,8 +1279,8 @@
         },
         {
             "name": "sphere_-3_3",
-            "type": "MovingSphere",
-            "center0": [
+            "type": "Sphere",
+            "center": [
                 -2.6457420125007074,
                 0.2,
                 3.3124322041753853
@@ -1297,8 +1297,8 @@
         },
         {
             "name": "sphere_-3_4",
-            "type": "MovingSphere",
-            "center0": [
+            "type": "Sphere",
+            "center": [
                 -2.779129461907744,
                 0.2,
                 4.492073057201508
@@ -1315,8 +1315,8 @@
         },
         {
             "name": "sphere_-1_-5",
-            "type": "MovingSphere",
-            "center0": [
+            "type": "Sphere",
+            "center": [
                 -0.1829945422222724,
                 0.2,
                 -4.216293152622882
@@ -1377,8 +1377,8 @@
         },
         {
             "name": "sphere_-1_0",
-            "type": "MovingSphere",
-            "center0": [
+            "type": "Sphere",
+            "center": [
                 -0.2270392414435427,
                 0.2,
                 0.6468512584068613
@@ -1406,8 +1406,8 @@
         },
         {
             "name": "sphere_-1_2",
-            "type": "MovingSphere",
-            "center0": [
+            "type": "Sphere",
+            "center": [
                 -0.9663844601656741,
                 0.2,
                 2.1700710945738018
@@ -1424,8 +1424,8 @@
         },
         {
             "name": "sphere_-1_3",
-            "type": "MovingSphere",
-            "center0": [
+            "type": "Sphere",
+            "center": [
                 -0.8045551276151239,
                 0.2,
                 3.352624773280189
@@ -1453,8 +1453,8 @@
         },
         {
             "name": "sphere_0_-5",
-            "type": "MovingSphere",
-            "center0": [
+            "type": "Sphere",
+            "center": [
                 0.543529148598346,
                 0.2,
                 -4.270450233264457
@@ -1471,8 +1471,8 @@
         },
         {
             "name": "sphere_0_-4",
-            "type": "MovingSphere",
-            "center0": [
+            "type": "Sphere",
+            "center": [
                 0.6969284136042903,
                 0.2,
                 -3.2660268700242434
@@ -1500,8 +1500,8 @@
         },
         {
             "name": "sphere_0_-2",
-            "type": "MovingSphere",
-            "center0": [
+            "type": "Sphere",
+            "center": [
                 0.4069343015563004,
                 0.2,
                 -1.257723120043792
@@ -1518,8 +1518,8 @@
         },
         {
             "name": "sphere_0_-1",
-            "type": "MovingSphere",
-            "center0": [
+            "type": "Sphere",
+            "center": [
                 0.2006913015562559,
                 0.2,
                 -0.8214520439866202
@@ -1547,8 +1547,8 @@
         },
         {
             "name": "sphere_0_1",
-            "type": "MovingSphere",
-            "center0": [
+            "type": "Sphere",
+            "center": [
                 0.6934252683879064,
                 0.2,
                 1.5752444047743603
@@ -1565,8 +1565,8 @@
         },
         {
             "name": "sphere_0_2",
-            "type": "MovingSphere",
-            "center0": [
+            "type": "Sphere",
+            "center": [
                 0.4769399097380951,
                 0.2,
                 2.2861816651629905
@@ -1583,8 +1583,8 @@
         },
         {
             "name": "sphere_0_3",
-            "type": "MovingSphere",
-            "center0": [
+            "type": "Sphere",
+            "center": [
                 0.32333449980759416,
                 0.2,
                 3.0068831561426537
@@ -1601,8 +1601,8 @@
         },
         {
             "name": "sphere_0_4",
-            "type": "MovingSphere",
-            "center0": [
+            "type": "Sphere",
+            "center": [
                 0.43620669633834347,
                 0.2,
                 4.834372249629737
@@ -1619,8 +1619,8 @@
         },
         {
             "name": "sphere_1_-5",
-            "type": "MovingSphere",
-            "center0": [
+            "type": "Sphere",
+            "center": [
                 1.527645134606974,
                 0.2,
                 -4.654029501862472
@@ -1637,8 +1637,8 @@
         },
         {
             "name": "sphere_1_-4",
-            "type": "MovingSphere",
-            "center0": [
+            "type": "Sphere",
+            "center": [
                 6.5626546777719685,
                 0.2,
                 3.577074581395241
@@ -1655,8 +1655,8 @@
         },
         {
             "name": "sphere_1_-3",
-            "type": "MovingSphere",
-            "center0": [
+            "type": "Sphere",
+            "center": [
                 1.890383448205521,
                 0.2,
                 -2.4848739678531397
@@ -1673,8 +1673,8 @@
         },
         {
             "name": "sphere_1_-2",
-            "type": "MovingSphere",
-            "center0": [
+            "type": "Sphere",
+            "center": [
                 1.1873541242585028,
                 0.2,
                 -1.529396909128522
@@ -1691,8 +1691,8 @@
         },
         {
             "name": "sphere_1_-1",
-            "type": "MovingSphere",
-            "center0": [
+            "type": "Sphere",
+            "center": [
                 1.7072200082479212,
                 0.2,
                 -0.34934039942200634
@@ -1720,8 +1720,8 @@
         },
         {
             "name": "sphere_1_1",
-            "type": "MovingSphere",
-            "center0": [
+            "type": "Sphere",
+            "center": [
                 1.6290401189288963,
                 0.2,
                 1.4728702926557664
@@ -1738,8 +1738,8 @@
         },
         {
             "name": "sphere_1_2",
-            "type": "MovingSphere",
-            "center0": [
+            "type": "Sphere",
+            "center": [
                 1.0578474828030233,
                 0.2,
                 2.5910278952654235
@@ -1778,8 +1778,8 @@
         },
         {
             "name": "sphere_3_-5",
-            "type": "MovingSphere",
-            "center0": [
+            "type": "Sphere",
+            "center": [
                 3.038784549450936,
                 0.2,
                 -4.522579979673896
@@ -1796,8 +1796,8 @@
         },
         {
             "name": "sphere_3_-4",
-            "type": "MovingSphere",
-            "center0": [
+            "type": "Sphere",
+            "center": [
                 3.025330986531281,
                 0.2,
                 -3.317038934651849
@@ -1847,8 +1847,8 @@
         },
         {
             "name": "sphere_3_0",
-            "type": "MovingSphere",
-            "center0": [
+            "type": "Sphere",
+            "center": [
                 3.1380611346709992,
                 0.2,
                 0.6327348254651076
@@ -1865,8 +1865,8 @@
         },
         {
             "name": "sphere_3_1",
-            "type": "MovingSphere",
-            "center0": [
+            "type": "Sphere",
+            "center": [
                 3.707730381196737,
                 0.2,
                 1.2853715796858636
@@ -1883,8 +1883,8 @@
         },
         {
             "name": "sphere_3_2",
-            "type": "MovingSphere",
-            "center0": [
+            "type": "Sphere",
+            "center": [
                 3.7452312773112246,
                 0.2,
                 2.203569141913031
@@ -1901,8 +1901,8 @@
         },
         {
             "name": "sphere_3_3",
-            "type": "MovingSphere",
-            "center0": [
+            "type": "Sphere",
+            "center": [
                 3.7380206778812326,
                 0.2,
                 3.5513318319248732
@@ -1919,8 +1919,8 @@
         },
         {
             "name": "sphere_3_4",
-            "type": "MovingSphere",
-            "center0": [
+            "type": "Sphere",
+            "center": [
                 3.0395913736852194,
                 0.2,
                 4.571570564044167
@@ -1969,5 +1969,6 @@
             "material": "material3"
         }
     ],
-    "lights": []
+    "lights": ["front_left_sphere_-5_-4"],
+    "tmp_lights":["sphere_-5_-3", "sphere_-5_-4", "sphere_-5_-5"]
 }

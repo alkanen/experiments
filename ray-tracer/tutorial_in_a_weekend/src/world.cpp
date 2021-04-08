@@ -21,6 +21,7 @@ World::World(json &conf, Camera &camera)
 {
   std::cerr << "Reading background color" << std::endl;
   auto bg = conf["background"];
+  std::cerr << bg << std::endl;
   if(bg["type"] == "SolidColor") {
     background = new SolidColor(
       Color(
@@ -30,6 +31,7 @@ World::World(json &conf, Camera &camera)
       )
     );
   } else if(bg["type"] == "Image") {
+    std::cerr << "Reading background image " << bg["filename"].get<std::string>() << std::endl;
     background = new ImageTexture(bg["filename"].get<std::string>());
   }
 

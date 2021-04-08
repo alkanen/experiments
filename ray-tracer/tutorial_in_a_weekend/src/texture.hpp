@@ -79,6 +79,7 @@ private:
   unsigned char *data;
   int width, height;
   int bytes_per_scanline;
+  bool bilinear;
 };
 
 #endif
