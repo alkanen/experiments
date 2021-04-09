@@ -49,6 +49,7 @@ public:
 public:
   Aabb box;
   std::vector<BvhNode*> nodes;
+  bool empty;
 };
 
 bool box_compare(const Hittable *a, const Hittable *b, int axis);
