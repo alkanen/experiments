@@ -60,6 +60,9 @@ bool HittableList::bounding_box(double time0, double time1, Aabb &output_box) co
 
 double HittableList::pdf_value(const Point3 &o, const Vec3 &v) const
 {
+  if(objects.size() == 0)
+    return 0;
+
   auto weight = 1.0/objects.size();
   auto sum = 0.0;
 

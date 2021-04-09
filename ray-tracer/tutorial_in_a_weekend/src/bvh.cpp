@@ -77,6 +77,13 @@ Bvh::Bvh(
 )
 {
   size_t num_objs = src_objects.size();
+  if(num_objs == 0) {
+    empty = true;
+    return;
+  } else {
+    empty = false;
+  }
+
   auto objects = src_objects;
   std::vector<Hittable*> leaves;
 
@@ -127,7 +134,6 @@ Bvh::Bvh(
 
   num_objs = objects.size();
 
-  int ctr = 1;
   while(num_objs > 1) {
     while(num_objs > 0) {
       size_t min_i = num_objs, min_j = num_objs;
@@ -144,7 +150,7 @@ Bvh::Bvh(
 
             double volume = surrounding_box(i_box, j_box).volume();
 
-            if(volume) {
+            if(volume < min_value) {
               min_value = volume;
               min_i = i;
               min_j = j;
@@ -187,6 +193,9 @@ bool Bvh::hit(
   const Ray &r, double t_min, double t_max, HitRecord &rec
 ) const
 {
+  if(empty)
+    return false;
+
   if(!box.hit(r, t_min, t_max))
     return false;
 
@@ -197,6 +206,9 @@ bool Bvh::bounding_box(
   double time0, double time1, Aabb &output_box
 ) const
 {
+  if(empty)
+    return false;
+
   output_box = box;
   return true;
 }
