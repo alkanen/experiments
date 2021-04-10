@@ -47,12 +47,15 @@ int sample_pixel(
   RenderParams &render_params,
   RenderSegment &render_segment,
   Camera &cam,
-  World &world
+  World &world,
+  int &skipped
 )
 {
   // auto pos = ((int64_t)render_params.height - j - 1) * render_params.width + i;
   int count = 0;
   double grid_step = 1.0 / render_params.sample_grid_size;
+
+  skipped = 0;
 
   for(int y = 0; y < render_params.sample_grid_size; y++ ) {
     for(int x = 0; x < render_params.sample_grid_size; x++ ) {
@@ -65,8 +68,10 @@ int sample_pixel(
                       world, render_params.max_depth
                     );
 
-      if (is_nan(tmpc1) || tmpc1.length() > MAX_COLOR)
+      if (is_nan(tmpc1) || tmpc1.length() > MAX_COLOR) {
+        skipped += 1;
         continue;
+      }
 
       x_offs = (x + random_double()) / render_params.sample_grid_size;
       y_offs = (y + random_double()) / render_params.sample_grid_size;
@@ -77,8 +82,10 @@ int sample_pixel(
                       world, render_params.max_depth
                     );
 
-      if (is_nan(tmpc2) || tmpc2.length() > MAX_COLOR)
+      if (is_nan(tmpc2) || tmpc2.length() > MAX_COLOR) {
+        skipped += 1;
         continue;
+      }
 
 #ifdef SAMPLE_CLAMP
       data1[pos] += clamp_color(tmpc1, SAMPLE_CLAMP);
@@ -214,14 +221,18 @@ int main(int argc, char *argv[])
           local_reached_max++;
           int pos = ((int)render_params.height - j - 1) * render_params.width + i;
 
+          int pixel_skipped = 0;
+
           for (int s = 0; s < render_params.max_samples_per_pixel; ) {
+            int skipped = 0;
             int num_samples = sample_pixel(
               data1, data2,
               counter,
               pos,
               i, j,
               render_params, segment,
-              cam, world
+              cam, world,
+              skipped
             );
             s += num_samples;
 
@@ -236,6 +247,12 @@ int main(int argc, char *argv[])
                 local_reached_max--;
                 break;
               }
+            }
+
+            pixel_skipped += skipped;
+            if(pixel_skipped > render_params.max_samples_per_pixel) {
+              std::cerr << "Had to bail on (" << j << ", " << i << ") due to too many skipped pixels" << std::endl;
+              break;
             }
           }
 

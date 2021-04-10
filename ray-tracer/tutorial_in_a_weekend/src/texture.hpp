@@ -67,8 +67,6 @@ public:
 
 class ImageTexture : public Texture {
 public:
-  const static int bytes_per_pixel = 3;
-
   ImageTexture();
   ImageTexture(const std::string &filename);
   ~ImageTexture();
@@ -76,9 +74,11 @@ public:
   virtual Color value(double u, double v, const Vec3 &p) const override;
 
 private:
-  unsigned char *data;
+  float *data;
   int width, height;
-  int bytes_per_scanline;
+  int components_per_scanline;
+  int components_per_pixel;
+  int valid_components;
   bool bilinear;
 };
 
