@@ -30,7 +30,7 @@
 #define SAMPLE_CLAMP 100
 #undef SAMPLE_CLAMP
 
-#define MAX_COLOR 200
+#define MAX_COLOR 2000000
 
 using json = nlohmann::json;
 
@@ -48,14 +48,16 @@ int sample_pixel(
   RenderSegment &render_segment,
   Camera &cam,
   World &world,
-  int &skipped
+  int &skipped_nan,
+  int &skipped_high
 )
 {
   // auto pos = ((int64_t)render_params.height - j - 1) * render_params.width + i;
   int count = 0;
   double grid_step = 1.0 / render_params.sample_grid_size;
 
-  skipped = 0;
+  skipped_nan = 0;
+  skipped_high = 0;
 
   for(int y = 0; y < render_params.sample_grid_size; y++ ) {
     for(int x = 0; x < render_params.sample_grid_size; x++ ) {
@@ -68,8 +70,12 @@ int sample_pixel(
                       world, render_params.max_depth
                     );
 
-      if (is_nan(tmpc1) || tmpc1.length() > MAX_COLOR) {
-        skipped += 1;
+      if(is_nan(tmpc1)) {
+        skipped_nan += 1;
+        continue;
+      }
+      if(tmpc1.length() > MAX_COLOR) {
+        skipped_high += 1;
         continue;
       }
 
@@ -82,8 +88,12 @@ int sample_pixel(
                       world, render_params.max_depth
                     );
 
-      if (is_nan(tmpc2) || tmpc2.length() > MAX_COLOR) {
-        skipped += 1;
+      if(is_nan(tmpc2)) {
+        skipped_nan += 1;
+        continue;
+      }
+      if(tmpc2.length() > MAX_COLOR) {
+        skipped_high += 1;
         continue;
       }
 
@@ -221,10 +231,12 @@ int main(int argc, char *argv[])
           local_reached_max++;
           int pos = ((int)render_params.height - j - 1) * render_params.width + i;
 
-          int pixel_skipped = 0;
+          int pixel_skipped_nan = 0;
+          int pixel_skipped_high = 0;
 
           for (int s = 0; s < render_params.max_samples_per_pixel; ) {
-            int skipped = 0;
+            int skipped_nan = 0;
+            int skipped_high = 0;
             int num_samples = sample_pixel(
               data1, data2,
               counter,
@@ -232,7 +244,8 @@ int main(int argc, char *argv[])
               i, j,
               render_params, segment,
               cam, world,
-              skipped
+              skipped_nan,
+              skipped_high
             );
             s += num_samples;
 
@@ -249,9 +262,15 @@ int main(int argc, char *argv[])
               }
             }
 
-            pixel_skipped += skipped;
-            if(pixel_skipped > render_params.max_samples_per_pixel) {
-              std::cerr << "Had to bail on (" << j << ", " << i << ") due to too many skipped pixels" << std::endl;
+            pixel_skipped_nan += skipped_nan;
+            pixel_skipped_high += skipped_high;
+
+            if(pixel_skipped_nan > render_params.max_samples_per_pixel) {
+              std::cerr << "Had to bail on (" << j << ", " << i << ") due to too many NaN pixels" << std::endl;
+              break;
+            }
+            if(pixel_skipped_high > render_params.max_samples_per_pixel) {
+              std::cerr << "Had to bail on (" << j << ", " << i << ") due to too many high pixels" << std::endl;
               break;
             }
           }
