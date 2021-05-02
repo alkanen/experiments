@@ -114,6 +114,8 @@ int sample_pixel(
 
 int main(int argc, char *argv[])
 {
+  auto t1 = std::chrono::high_resolution_clock::now();
+
   std::string config_filename;
   if(argc >= 2) {
     config_filename = argv[1];
@@ -200,7 +202,7 @@ int main(int argc, char *argv[])
   if(save_divider)
     next_save = num_segments / save_divider;
   std::mutex mutex;
-  auto t1 = std::chrono::high_resolution_clock::now();
+  auto t2 = std::chrono::high_resolution_clock::now();
   for_each(
     std::execution::par_unseq,
     segments.begin(),
@@ -310,7 +312,7 @@ int main(int argc, char *argv[])
       }
     }
   );
-  auto t2 = std::chrono::high_resolution_clock::now();
+  auto t3 = std::chrono::high_resolution_clock::now();
   std::cerr << "\nRender complete." << std::endl;
   std::cerr
     << "Average "
@@ -318,12 +320,32 @@ int main(int argc, char *argv[])
     << " samples per pixel"
     << std::endl;
 
-  int ms = static_cast<int>(std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count());
-  int minutes = int(ms / 60000);
-  ms -= minutes * 60000;
-  int seconds = int(ms / 1000);
-  ms -= seconds * 1000;
-  std::cerr << "Total time: " << minutes << ":" << seconds << "." << ms << std::endl;
+  {
+    int ms = static_cast<int>(std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count());
+    int minutes = int(ms / 60000);
+    ms -= minutes * 60000;
+    int seconds = int(ms / 1000);
+    ms -= seconds * 1000;
+    std::cerr << "Setup time: " << minutes << ":" << seconds << "." << ms << std::endl;
+  }
+
+  {
+    int ms = static_cast<int>(std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t2).count());
+    int minutes = int(ms / 60000);
+    ms -= minutes * 60000;
+    int seconds = int(ms / 1000);
+    ms -= seconds * 1000;
+    std::cerr << "Render time: " << minutes << ":" << seconds << "." << ms << std::endl;
+  }
+
+  {
+    int ms = static_cast<int>(std::chrono::duration_cast<std::chrono::milliseconds>(t3 - t1).count());
+    int minutes = int(ms / 60000);
+    ms -= minutes * 60000;
+    int seconds = int(ms / 1000);
+    ms -= seconds * 1000;
+    std::cerr << "Total time: " << minutes << ":" << seconds << "." << ms << std::endl;
+  }
 
   // Dump image
   if(!config.output_image.empty()) {

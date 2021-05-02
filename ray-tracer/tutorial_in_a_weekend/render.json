@@ -1,9 +1,9 @@
 {
     "width": 1920,
     "height": 1080,
-    "sample_grid_size": 5,
-    "min_samples_per_pixel": 50,
-    "max_samples_per_pixel": 100,
-    "max_depth": 20,
+    "sample_grid_size": 4,
+    "min_samples_per_pixel": 1,
+    "max_samples_per_pixel": 1,
+    "max_depth": 2,
     "pincer_limit": 0.00005
 }

@@ -1,10 +1,22 @@
 {
-    "look_from": [26, 4, 6],
-    "look_at": [0, 0, 0],
-    "up": [0, 1, 0],
+    "look_from": [
+        25.999009999668456,
+        0,
+        -0.22688992295773763
+    ],
+    "look_at": [
+        0,
+        3,
+        0
+    ],
+    "up": [
+        0,
+        1,
+        0
+    ],
     "vertical_fov": 40.0,
-    "dist_to_focus": 10.0,
-    "aperture": 0.0,
+    "dist_to_focus": 250.0,
+    "aperture": 0.01,
     "time_start": 0.0,
     "time_end": 1.0
 }

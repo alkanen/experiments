@@ -7,25 +7,7 @@
 #include "hittable_list.hpp"
 
 
-class BvhNode : public Hittable {
-public:
-  BvhNode();
-  BvhNode(Hittable *left, Hittable *right, double time0, double time1, bool leaf);
-
-  virtual bool hit(
-    const Ray &r, double t_min, double t_max, HitRecord &rec
-  ) const override;
-
-  virtual bool bounding_box(
-    double time0, double time1, Aabb &output_box
-  ) const override;
-
-public:
-  Hittable *left;
-  Hittable *right;
-  Aabb box;
-  bool leaf;
-};
+class BvhNode;
 
 std::ostream& operator<<(std::ostream &out, const BvhNode &node);
 std::ostream& operator<<(std::ostream &out, const BvhNode *node);

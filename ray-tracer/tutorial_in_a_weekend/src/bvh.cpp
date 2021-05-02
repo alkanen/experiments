@@ -7,38 +7,56 @@
 #include "aabb.hpp"
 #include "ray.hpp"
 
+class BvhNode {
+public:
+  BvhNode();
+  BvhNode(BvhNode *left, BvhNode *right, bool leaf, Hittable *object);
+
+  bool hit(const Ray &r, double t_min, double &t_max) const;
+
+  bool bounding_box(Aabb &output_box) const;
+
+public:
+  BvhNode *left;
+  BvhNode *right;
+  Aabb box;
+  bool leaf;
+  Hittable *object;
+};
+
 BvhNode::BvhNode()
 {
 }
 
-BvhNode::BvhNode(Hittable *left_obj, Hittable *right_obj, double time0, double time1, bool leaf)
+BvhNode::BvhNode(BvhNode *left_obj, BvhNode *right_obj, bool leaf, Hittable *object)
   : left(left_obj)
   , right(right_obj)
   , leaf(leaf)
+  , object(object)
 {
   Aabb box_left, box_right;
 
-  left->bounding_box(time0, time1, box_left);
-  right->bounding_box(time0, time1, box_right);
+  left->bounding_box(box_left);
+  right->bounding_box(box_right);
 
   box = surrounding_box(box_left, box_right);
 }
 
-bool BvhNode::bounding_box(double time0, double time1, Aabb &output_box) const
+bool BvhNode::bounding_box(Aabb &output_box) const
 {
   output_box = box;
   return true;
 }
 
-bool BvhNode::hit(const Ray &r, double t_min, double t_max, HitRecord &rec) const
+bool BvhNode::hit(const Ray &r, double t_min, double &t_max) const
 {
   if(!box.hit(r, t_min, t_max))
     return false;
 
-  bool hit_left = left->hit(r, t_min, t_max, rec);
+  bool hit_left = left->hit(r, t_min, t_max);
   bool hit_right = false;
   if(left != right)
-    hit_right = right->hit(r, t_min, hit_left ? rec.t : t_max, rec);
+    hit_right = right->hit(r, t_min, t_max);
 
   return hit_left || hit_right;
 }
@@ -76,6 +94,7 @@ Bvh::Bvh(
   double time0, double time1
 )
 {
+#if 0
   size_t num_objs = src_objects.size();
   if(num_objs == 0) {
     empty = true;
@@ -121,7 +140,6 @@ Bvh::Bvh(
       objects.clear();
     }
 
-    leaves.push_back(new BvhNode(obj_i, obj_j, time0, time1, true));
     leaves.back()->setName(
       "{\"left\": \"" + obj_i->name + "\", \"right\": \"" + obj_j->name + "\"}"
     );
@@ -169,7 +187,7 @@ Bvh::Bvh(
         objects.clear();
       }
 
-      leaves.push_back(new BvhNode(obj_i, obj_j, time0, time1, false));
+      leaves.emplace_back(new BvhNode(obj_i, obj_j, time0, time1, false));
       leaves.back()->setName(
         "{\"left\":" + obj_i->name + ", \"right\":" + obj_j->name + "}"
       );
@@ -186,7 +204,8 @@ Bvh::Bvh(
   objects[0]->bounding_box(time0, time1, box);
   //std::cerr << dynamic_cast<BvhNode*>(objects[0]) << std::endl;
 
-  nodes.push_back(dynamic_cast<BvhNode*>(objects[0]));
+  nodes.emplace_back(dynamic_cast<BvhNode*>(objects[0]));
+#endif
 }
 
 bool Bvh::hit(
@@ -199,7 +218,7 @@ bool Bvh::hit(
   if(!box.hit(r, t_min, t_max))
     return false;
 
-  return nodes[0]->hit(r, t_min, t_max, rec);
+  return nodes[0]->hit(r, t_min, t_max);
 }
 
 bool Bvh::bounding_box(
