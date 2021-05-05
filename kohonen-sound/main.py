@@ -124,11 +124,6 @@ def main():
             weights=args.load_weights,
         )
 
-        samples = data_source[10000:10004]
-        print(samples)
-        print(samples.shape)
-        print(samples.dtype)
-
         som.train(
             max_iterations=args.num_iterations,
             batch_size=args.batch_size,
@@ -146,7 +141,7 @@ def main():
             ),
             state_filename=args.state,
             weights_file=args.store_weights,
-            steps_between_saves=5,
+            steps_between_saves=30,
             steps_between_render=30,
             steps_between_dumps=1000,
             iterations_between_dumps=1,

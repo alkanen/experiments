@@ -2,10 +2,11 @@ import concurrent.futures
 import json
 import math
 import multiprocessing
+from numba import jit
 import numpy as np
 import random
 import shutil
-from typing import Any, Optional, Union
+from typing import Any, Callable, List, Optional, Tuple, Union
 
 from tqdm import tqdm
 
@@ -98,6 +99,7 @@ class KohonenSom:
                 - 1
             )
 
+    @jit(nopython=True)
     def best_matching_unit(self, targets: DataSource, index: int):
         """
         Return the XY coordinates of the unit closest to the target specified
@@ -137,7 +139,7 @@ class KohonenSom:
         rad = radius
         step = 0
         first_iteration = 0
-        skip_indices = []
+        skip_indices: List[int] = []
 
         if state_filename:
             try:
@@ -162,30 +164,36 @@ class KohonenSom:
             print(f"Training iteration {i}/{max_iterations-1}")
 
             skipped = len(skip_indices)
+            target_length = len(targets)
 
-            # Pick targets randomly from target list
-            if batch_size:
-                indices = [
-                    int(x) for x in np.random.permutation(len(targets))[:batch_size]
-                ]
-                if skip_indices:
-                    indices = list(set(indices) - set(skip_indices))[
-                        : batch_size - skipped
-                    ]
-                total = batch_size
+            def gen_indices(
+                batch_size: int, skip_indices: List[int]
+            ) -> Tuple[List[int], int]:
+                # Pick targets randomly from target list
+                if batch_size:
+                    # indices = [
+                    #    int(x) for x in np.random.permutation(target_length)[:batch_size]
+                    # ]
+                    indices = list(
+                        np.random.permutation(target_length).astype(int)[:batch_size]
+                    )
+                    if len(skip_indices):
+                        indices = list(set(indices) - set(skip_indices))[
+                            : batch_size - skipped
+                        ]
+                    total = batch_size
 
-            else:
-                if skip_indices:
-                    indices = list(set(range(len(targets))) - set(skip_indices))
                 else:
-                    try:
-                        indices = list(range(len(targets)))
-                    except TypeError:
-                        import pdb
+                    if len(skip_indices):
+                        indices = list(set(range(target_length)) - set(skip_indices))
+                    else:
+                        indices = list(range(target_length))
+                    random.shuffle(indices)
+                    total = len(indices)
 
-                        pdb.set_trace()
-                random.shuffle(indices)
-                total = len(indices)
+                return indices, total
+
+            indices, total = gen_indices(batch_size, skip_indices)
 
             print(f"Training on batch of {len(indices)} samples, step is {step}")
             for ti in tqdm(
@@ -194,7 +202,7 @@ class KohonenSom:
                 # Decrease learning rate and area of influence after each iteration
                 lr = learning_rate * math.exp(
                     -step
-                    / (max_iterations * (batch_size if batch_size else len(targets)))
+                    / (max_iterations * (batch_size if batch_size else target_length))
                 )
                 rad = radius * (
                     1
@@ -203,10 +211,11 @@ class KohonenSom:
                         1.2
                         * (
                             max_iterations
-                            * (batch_size if batch_size else len(targets))
+                            * (batch_size if batch_size else target_length)
                         )
                     )
                 )
+                inv_rad = 1.0 / rad
 
                 target = targets[ti]
 
@@ -216,14 +225,17 @@ class KohonenSom:
                 x = bmu - y * self.width
 
                 # Update the surrounding neighbourhood to make them closer to the target
-                neighbourhoood = hg.neighbours(x, y, rad)
-                for n_x, n_y, dist in neighbourhoood:
+                neighbourhood = hg.neighbours(x, y, rad)
+
+                for n_y, n_x, dist in neighbourhood:
                     distance = dist
-                    influence = self._influence(distance, rad)
+                    # Roughly 0.01 at sqRadius, bell shaped curve centered around 0.0
+                    d = distance * inv_rad
+                    infl = 2.0 / (1.0 + np.exp(5.33 * d * d))
 
                     # Move the neuron slightly towards the target
                     self.weights[n_y, n_x] += (
-                        (target - self.weights[n_y, n_x]) * lr * influence
+                        (target - self.weights[n_y, n_x]) * lr * infl
                     )
 
                 if (
@@ -245,13 +257,19 @@ class KohonenSom:
                 if weights_file and (
                     steps_between_saves == 1 or (step % steps_between_saves == 0)
                 ):
+                    try:
+                        shutil.copy(weights_file, f"{weights_file}.bup")
+                    except FileNotFoundError:
+                        pass
                     self.save(weights_file, suppress=True)
 
                 # Keep track of trained indices but only after weights have been saved
-                skip_indices.append(ti)
+                skip_indices.append(int(ti))
 
                 # Save current state
-                if state_filename:
+                if state_filename and (
+                    steps_between_saves == 1 or (step % steps_between_saves == 0)
+                ):
                     try:
                         shutil.copy(state_filename, f"{state_filename}.bup")
                     except FileNotFoundError:
@@ -293,11 +311,6 @@ class KohonenSom:
 
         if weights_file:
             self.save(f"{weights_file}_final.npy")
-
-    def _influence(self, distance, radius):
-        # Roughly 0.01 at sqRadius, bell shaped curve centered around 0.0
-        d = distance / radius
-        return 2.0 / (1.0 + math.exp(5.33 * d * d))
 
     def save(self, filename: str, suppress: bool = False):
         if not suppress:

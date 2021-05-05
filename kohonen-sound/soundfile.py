@@ -1,5 +1,6 @@
-from typing import Any
+from typing import Any, Union
 
+from numba import jit
 import numpy as np
 from pydub import AudioSegment
 
@@ -57,11 +58,13 @@ class SoundFile(DataSource):
     def random(self, samples: int = 1):
         return np.random.random((samples, self.sample_length)).astype(self.dtype)
 
-    def distance(self, sample: Any, weights: np.ndarray) -> np.ndarray:
+    @jit(nopython=True)
+    def distance(self, sample: np.ndarray, weights: np.ndarray) -> np.ndarray:
         """Return the distance between a sample and all weight vectors."""
         return np.sqrt(self.distance_squared(sample, weights))
 
-    def distance_squared(self, sample: Any, weights: np.ndarray) -> np.ndarray:
+    @jit(forceobj=True)
+    def distance_squared(self, sample: np.ndarray, weights: np.ndarray) -> np.ndarray:
         """Return the square of the distance between a sample and all weight vectors."""
         return np.sum(
             np.square(sample - weights.reshape((-1, self.sample_length))),
@@ -76,7 +79,7 @@ class SoundFile(DataSource):
     def __len__(self):
         return self._length
 
-    def __getitem__(self, key):
+    def __getitem__(self, key) -> Union[np.ndarray, int]:
         if isinstance(key, slice):
             start = (key.start if key.start is not None else 0) * (
                 self._values_between_samples
@@ -95,13 +98,19 @@ class SoundFile(DataSource):
                 ]
             )
 
-        elif isinstance(key, int):
-            return self._data[
-                key * self._values_between_samples : key * self._values_between_samples
-                + self.sample_length
-            ]
-        else:
-            raise IndexError("Index must be integer or slice of integers")
+        else:  # isinstance(key, int):
+            try:
+                new_key = int(key)
+                return self._data[
+                    new_key
+                    * self._values_between_samples : new_key
+                    * self._values_between_samples
+                    + self.sample_length
+                ]
+            except ValueError:
+                raise IndexError(
+                    "Index must be integer or slice of integers, not", type(key)
+                ) from None
 
     def __contains__(self, key):
         raise NotImplementedError

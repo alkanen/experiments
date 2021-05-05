@@ -1,0 +1,7 @@
+*.npy
+images/
+state.json
+*.bup
+*.wav
+*.mp3
+\#*

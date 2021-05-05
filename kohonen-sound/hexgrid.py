@@ -1,4 +1,5 @@
 import math
+from numba import jit
 import numpy as np
 from typing import Optional, Tuple
 
@@ -61,6 +62,7 @@ class HexGrid:
             np.arange(2 * height), np.arange(2 * width), indexing="ij"
         )
 
+        @jit(nopython=True, fastmath=True)
         def meshes_to_dist(
             col: np.ndarray, row: np.ndarray, width: int, height: int
         ) -> np.ndarray:
@@ -87,23 +89,24 @@ class HexGrid:
     def neighbours(self, x: int, y: int, max_distance: int = 1) -> set:
         dist = np.roll(np.roll(self.distance_matrix, y, axis=0), x, axis=1)
 
-        return {
-            (coord[1], coord[0], dist[coord[0], coord[1]])
-            for coord in np.argwhere(dist <= max_distance)
-        }
+        idx = np.nonzero(dist <= max_distance)
+        return np.stack((*idx, dist[idx])).T
 
+    @jit(nopython=True)
     def _offset_to_cube(self, col: int, row: int) -> Tuple[int, int, int]:
         x = col - (row + (row & 1)) // 2
         z = row
         y = -x - z
         return (x, y, z)
 
+    @jit(nopython=True)
     def _cube_to_offset(self, x: int, y: int, z: int) -> Tuple[int, int]:
         col = x + (z + (z & 1)) // 2
         row = z
 
         return (col % self.width, row % self.height)
 
+    @jit(nopython=True, fastmath=True)
     def distance(self, x, y, fx, fy):
         if abs(x - fx) > self.width / 2:
             if x > fx:
