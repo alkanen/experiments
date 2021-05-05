@@ -1,0 +1,7 @@
+colorcet
+matplotlib
+mypy
+numpy
+pydub
+tqdm
+h5py
