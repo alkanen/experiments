@@ -39,6 +39,10 @@ class DataSource:
         """Iterate through the sample space."""
         raise NotImplementedError
 
+    def __next__(self):
+        """Iterate through the sample space."""
+        raise NotImplementedError
+
     def __len__(self):
         """Number of samples in the sample space."""
         raise NotImplementedError
@@ -60,6 +64,7 @@ class KohonenSom:
         data_source: DataSource,
         weights: Optional[Union[np.ndarray, str]] = None,
         dtype: Optional[np.dtype] = np.float32,
+        init_policy: str = "random",  # ["random" -> random values from 0.0 to 1.0, "sampling"]
     ):
         self.width = columns
         self.height = rows
@@ -90,14 +95,27 @@ class KohonenSom:
                 self.weights = weights
 
         else:
-            # Replace this with datatype.random()
-            self.weights = (
-                np.random.random((rows, columns, self.vector_length)).astype(
-                    dtype=self.dtype
+            if init_policy == "random":
+                print(f"Create random weight init, {rows} x {columns}")
+                self.weights = (
+                    data_source.random(rows * columns)
+                    .reshape((rows, columns, -1))
+                    .astype(self.dtype)
                 )
-                * 2
-                - 1
-            )
+                print(f"Shape: {self.weights.shape}")
+            elif init_policy == "sampling":
+                sample_indices = random.sample(range(len(data_source)), rows * columns)
+                self.weights = np.zeros(rows * columns * self.vector_length).reshape(
+                    (rows, columns, -1)
+                )
+
+                i = 0
+                for y in range(rows):
+                    for x in range(columns):
+                        self.weights[y, x] = data_source[sample_indices[i]]
+                        i += 1
+            else:
+                ValueError(f"Unknown intialization policy: '{init_policy}'")
 
     @jit(nopython=True)
     def best_matching_unit(self, targets: DataSource, index: int):
@@ -110,6 +128,10 @@ class KohonenSom:
         x = bmu - y * self.width
 
         return (x, y)
+
+    def best_matching_value(self, targets: DataSource, index: int):
+        x, y = self.best_matching_unit(targets, index)
+        return self.weights[y, x]
 
     def train(
         self,
@@ -171,13 +193,11 @@ class KohonenSom:
             ) -> Tuple[List[int], int]:
                 # Pick targets randomly from target list
                 if batch_size:
-                    # indices = [
-                    #    int(x) for x in np.random.permutation(target_length)[:batch_size]
-                    # ]
                     indices = list(
                         np.random.permutation(target_length).astype(int)[:batch_size]
                     )
                     if len(skip_indices):
+                        print(f"Skipping {skipped} finished samples.")
                         indices = list(set(indices) - set(skip_indices))[
                             : batch_size - skipped
                         ]
@@ -185,6 +205,7 @@ class KohonenSom:
 
                 else:
                     if len(skip_indices):
+                        print(f"Skipping {skipped} finished samples.")
                         indices = list(set(range(target_length)) - set(skip_indices))
                     else:
                         indices = list(range(target_length))
@@ -216,7 +237,6 @@ class KohonenSom:
                     )
                 )
                 inv_rad = 1.0 / rad
-
                 target = targets[ti]
 
                 # Find best matching unit in network
@@ -264,6 +284,7 @@ class KohonenSom:
                     self.save(weights_file, suppress=True)
 
                 # Keep track of trained indices but only after weights have been saved
+                # so the state shows what's been saved.
                 skip_indices.append(int(ti))
 
                 # Save current state
@@ -278,13 +299,18 @@ class KohonenSom:
                     with open(state_filename, "w") as f:
                         json.dump(
                             {
-                                "current_iteration": i,
+                                "rows": self.height,
+                                "columns": self.width,
+                                "vector_length": self.vector_length,
+                                "data_type": str(self.dtype),
                                 "initial_learning_rate": learning_rate,
+                                "initial_radius": radius,
                                 "current_learning_rate": lr,
+                                "current_radius": rad,
+                                "current_iteration": i,
+                                "batch_progress": len(skip_indices),
                                 "last_step": step,
                                 "indices_trained": skip_indices,
-                                "initial_radius": radius,
-                                "current_radius": rad,
                             },
                             f,
                             indent=4,

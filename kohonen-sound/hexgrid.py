@@ -31,10 +31,9 @@ class HexGrid:
         self.grid = {
             "centers": np.array(
                 [item for y in range(self.height) for item in self._row(y, self.width)],
-                dtype=int,
             ),
-            "x": np.array([self.width], dtype=int),
-            "y": np.array([self.height], dtype=int),
+            "x": np.array([self.width]),
+            "y": np.array([self.height]),
         }
 
         self.u_height = self.height * 2
@@ -46,10 +45,9 @@ class HexGrid:
                     for y in range(self.u_height)
                     for item in self._row(y, self.u_width)
                 ],
-                dtype=int,
             ),
-            "x": np.array([self.u_width], dtype=int),
-            "y": np.array([self.u_height], dtype=int),
+            "x": np.array([self.u_width]),
+            "y": np.array([self.u_height]),
         }
         self.umatrix_values = np.zeros((self.u_height, self.u_width))
 
@@ -186,9 +184,7 @@ class HexGrid:
         else:
             d_matrix = weights.reshape((self.width * self.height))
 
-        arguments = {
-            "cmap": cc.cm.coolwarm,
-        }
+        arguments = {"cmap": cc.cm.coolwarm}
 
         if title:
             arguments["title"] = title

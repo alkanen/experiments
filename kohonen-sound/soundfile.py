@@ -32,18 +32,19 @@ class SoundFile(DataSource):
         if a.channels != 1:
             raise ValueError("Only mono files are supported at the moment.")
 
-        self._sample_rate = a.frame_rate
-        self._values_per_ms = self._sample_rate / 1000
+        self.sample_rate = a.frame_rate
+        self._values_per_ms = self.sample_rate / 1000
         self._sample_length = int(round(self.ms_per_sample * self._values_per_ms))
         self._values_between_samples = int(
             round(self.ms_between_samples * self._values_per_ms)
         )
+        self.sample_width = a.sample_width
 
         samples = a.get_array_of_samples()
         # Only handle full samples
         end = len(samples) - (len(samples) % self._values_between_samples)
         self._data = np.array(samples[:end], dtype=self.dtype) / (
-            2 ** (8 * a.sample_width - 1)
+            2 ** (8 * self.sample_width - 1)
         )
         self._length = (end - self.sample_length) // self._values_between_samples
 
@@ -56,7 +57,7 @@ class SoundFile(DataSource):
         return (self._length, self.sample_length)
 
     def random(self, samples: int = 1):
-        return np.random.random((samples, self.sample_length)).astype(self.dtype)
+        return np.random.random((samples, self.sample_length)) * 2 - 1
 
     @jit(nopython=True)
     def distance(self, sample: np.ndarray, weights: np.ndarray) -> np.ndarray:
@@ -72,9 +73,13 @@ class SoundFile(DataSource):
         )
 
     def __iter__(self):
-        # for sample in data:
-        #     yield sample
-        raise NotImplementedError
+        return self
+
+    def __next__(self):
+        for i in range(len(self)):
+            yield self[i]
+
+        raise StopIteration
 
     def __len__(self):
         return self._length

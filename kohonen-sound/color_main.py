@@ -7,11 +7,10 @@ import math
 import sys
 
 import numpy as np
-from pydub import AudioSegment
-from tqdm import trange
+from PIL import Image
 
 from kohonen import KohonenSom
-from soundfile import SoundFile
+from colorsource import ColorSource
 
 
 def main():
@@ -31,6 +30,9 @@ def main():
         help="WAV or MP3 file with sound data to train from.",
         type=str,
         default=None,
+    )
+    parser.add_argument(
+        "--palette", help="Number of colors in target palette", type=int, default=8
     )
     parser.add_argument(
         "--classify-data",
@@ -150,23 +152,20 @@ def main():
     if args.load_weights:
         try:
             with open(args.load_weights, "r") as f:
-                pass
+                f = f
         except FileNotFoundError:
             print(f"Unable to open {args.load_weights}, generating new weights.")
             args.load_weights = None
 
     if args.train_data:
-        data_source = SoundFile(
-            filename=args.train_data,
-            ms_per_sample=args.ms_per_sample,
-            ms_between_samples=args.ms_between_samples,
-        )
+        data_source = ColorSource(args.palette)
+        print(dir(data_source))
+        print(data_source.sample_length)
 
         som = KohonenSom(
             columns=width,
             rows=height,
             data_source=data_source,
-            dtype=np.float32,
             weights=args.load_weights,
             init_policy=args.initializer,
         )
@@ -178,7 +177,7 @@ def main():
             learning_rate=args.learning_rate,
             radius=args.radius,
             image_template=(
-                "images/"
+                "color_images/"
                 "u_matrix_{step:08d}"
                 "_iter{iteration:04d}"
                 "_lr{learning_rate:.6f}"
@@ -194,54 +193,52 @@ def main():
             iterations_between_dumps=1,
         )
 
+        im = Image.fromarray(np.round(som.weights * 255).astype(np.uint8))
+        im.save("weights.jpg")
+
     elif args.classify_data:
-        data_source = SoundFile(
-            filename=args.classify_data,
-            ms_per_sample=args.ms_per_sample,
-            ms_between_samples=args.ms_between_samples,
-        )
+        data_source = ColorSource(args.palette)
         som = KohonenSom(
             columns=width,
             rows=height,
             data_source=data_source,
-            dtype=np.float32,
             weights=args.load_weights,
         )
         print("Classifyin!")
 
-        def to_segment(sample, data_source):
-            return AudioSegment(
-                sample.tobytes(),
-                frame_rate=data_source.sample_rate,
-                sample_width=data_source.sample_width,
-                channels=1,
-            )
-
-        if args.output.lower().endswith(".wav"):
-            output_filename = args.output[:-4]
-        else:
-            output_filename = args.output
-
-        segment = 1
-        output = None
-        for i in trange(len(data_source)):
-            sample = som.best_matching_value(data_source, i) * (
-                2 ** (8 * data_source.sample_width - 1)
-            )
-            if output is None:
-                output = to_segment(sample, data_source)
-            else:
-                output += to_segment(sample, data_source)
-
-            if i + 1 >= segment * len(data_source) / 10:
-                filename = f"{output_filename}_{segment:02d}.wav"
-                print(f"Saving segment to {filename}")
-
-                output.export(filename, format="WAV")
-                segment += 1
-                output = None
-
-                sys.exit(0)
+        # def to_segment(sample, data_source):
+        #     return AudioSegment(
+        #         sample.tobytes(),
+        #         frame_rate=data_source.sample_rate,
+        #         sample_width=data_source.sample_width,
+        #         channels=1,
+        #     )
+        #
+        # if args.output.lower().endswith(".wav"):
+        #     output_filename = args.output[:-4]
+        # else:
+        #     output_filename = args.output
+        #
+        # segment = 1
+        # output = None
+        # for i in trange(len(data_source)):
+        #     sample = som.best_matching_value(data_source, i) * (
+        #         2 ** (8 * data_source.sample_width - 1)
+        #     )
+        #     if output is None:
+        #         output = to_segment(sample, data_source)
+        #     else:
+        #         output += to_segment(sample, data_source)
+        #
+        #     if i + 1 >= segment * len(data_source) / 10:
+        #         filename = f"{output_filename}_{segment:02d}.wav"
+        #         print(f"Saving segment to {filename}")
+        #
+        #         output.export(filename, format="WAV")
+        #         segment += 1
+        #         output = None
+        #
+        #         sys.exit(0)
 
 
 if __name__ == "__main__":
