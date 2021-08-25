@@ -1,4 +1,5 @@
 colorcet
+llvmlite
 matplotlib
 mypy
 numba

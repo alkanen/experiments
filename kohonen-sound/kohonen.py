@@ -117,7 +117,7 @@ class KohonenSom:
             else:
                 ValueError(f"Unknown intialization policy: '{init_policy}'")
 
-    @jit(nopython=True)
+    # @jit(nopython=True)
     def best_matching_unit(self, targets: DataSource, index: int):
         """
         Return the XY coordinates of the unit closest to the target specified
@@ -274,8 +274,10 @@ class KohonenSom:
                         )
                     )
 
-                if weights_file and (
-                    steps_between_saves == 1 or (step % steps_between_saves == 0)
+                if (
+                    weights_file
+                    and steps_between_saves
+                    and (steps_between_saves == 1 or (step % steps_between_saves == 0))
                 ):
                     try:
                         shutil.copy(weights_file, f"{weights_file}.bup")
@@ -288,8 +290,10 @@ class KohonenSom:
                 skip_indices.append(int(ti))
 
                 # Save current state
-                if state_filename and (
-                    steps_between_saves == 1 or (step % steps_between_saves == 0)
+                if (
+                    state_filename
+                    and steps_between_saves
+                    and (steps_between_saves == 1 or (step % steps_between_saves == 0))
                 ):
                     try:
                         shutil.copy(state_filename, f"{state_filename}.bup")

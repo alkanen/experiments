@@ -8,9 +8,10 @@ import sys
 
 import numpy as np
 from PIL import Image
+from tqdm import trange
 
 from kohonen import KohonenSom
-from colorsource import ColorSource
+from imagesource import ImageSource
 
 
 def main():
@@ -27,23 +28,26 @@ def main():
     )
     parser.add_argument(
         "--train-data",
-        help="WAV or MP3 file with sound data to train from.",
+        help="Image file train from.",
         type=str,
         default=None,
     )
     parser.add_argument(
-        "--palette", help="Number of colors in target palette", type=int, default=8
-    )
-    parser.add_argument(
         "--classify-data",
-        help="WAV or MP3 file with sound data to 'classify' using a trained network.",
+        help="Image file to re-render using the 'palette' of a trained network.",
         type=str,
     )
     parser.add_argument(
         "--output",
-        help="WAV or MP3 file generated from --classify-data and a trained network.",
+        help="Image file generated from --classify-data and a trained network.",
         type=str,
-        default="output.wav",
+        default="output.png",
+    )
+    parser.add_argument(
+        "--dithering",
+        "--dither",
+        help="Enable Floyd-Steinberg dithering of output image.",
+        action="store_true",
     )
     parser.add_argument(
         "--width",
@@ -88,7 +92,7 @@ def main():
         "--state",
         "-s",
         help="State file used for resuming training et c.",
-        default="state.json",
+        default="image_state.json",
         type=str,
     )
     parser.add_argument(
@@ -108,22 +112,6 @@ def main():
         default=1,
         type=int,
     )
-    parser.add_argument(
-        "--ms-per-sample",
-        "-m",
-        help="Number of miliseconds per sample vector",
-        default=50,
-        type=int,
-    )
-    parser.add_argument(
-        "--ms-between-samples",
-        help=(
-            "Number of miliseconds to skip from beginning of sample 1 to beginning "
-            "of sample 2.  Samples may overlap."
-        ),
-        default=5,
-        type=int,
-    )
     args = parser.parse_args()
     if args.train_data and args.classify_data:
         print(args.train_data)
@@ -139,6 +127,7 @@ def main():
     width = args.width
     if not width & 1:
         width += 1
+        print(f"Width has to be odd, increasing to {width}")
     # 2 * w / sqrt(3) to make a square grid
     # 1.125 * w / sqrt(3) to make roughly 16:9
     if args.height is None:
@@ -148,6 +137,7 @@ def main():
 
     if height & 1:
         height += 1
+        print(f"Height cannot be odd, increasing to {height}")
 
     if args.load_weights:
         try:
@@ -158,7 +148,7 @@ def main():
             args.load_weights = None
 
     if args.train_data:
-        data_source = ColorSource(args.palette)
+        data_source = ImageSource(args.train_data)
         som = KohonenSom(
             columns=width,
             rows=height,
@@ -173,20 +163,20 @@ def main():
             targets=data_source,
             learning_rate=args.learning_rate,
             radius=args.radius,
-            image_template=(
-                "color_images/"
-                "u_matrix_{step:08d}"
-                "_iter{iteration:04d}"
-                "_lr{learning_rate:.6f}"
-                "_rad{radius:07.4f}"
-                "_idx{index:08d}"
-                ".png"
-            ),
+            image_template=None,  # (
+            #     "image_images/"
+            #     "u_matrix_{step:08d}"
+            #     "_iter{iteration:04d}"
+            #     "_lr{learning_rate:.6f}"
+            #     "_rad{radius:07.4f}"
+            #     "_idx{index:08d}"
+            #     ".png"
+            # ),
             state_filename=args.state,
             weights_file=args.store_weights,
-            steps_between_saves=100,
-            steps_between_render=100,
-            steps_between_dumps=10000,
+            steps_between_saves=None,
+            steps_between_render=1200,
+            steps_between_dumps=None,
             iterations_between_dumps=1,
         )
 
@@ -194,30 +184,52 @@ def main():
         im.save("weights.jpg")
 
     elif args.classify_data:
-        data_source = ColorSource(args.palette)
+        input_image = ImageSource(args.classify_data)
         som = KohonenSom(
             columns=width,
             rows=height,
-            data_source=data_source,
+            data_source=input_image,
             weights=args.load_weights,
         )
         print("Classifyin!")
 
-        # def to_segment(sample, data_source):
-        #     return AudioSegment(
-        #         sample.tobytes(),
-        #         frame_rate=data_source.sample_rate,
-        #         sample_width=data_source.sample_width,
-        #         channels=1,
-        #     )
-        #
-        # if args.output.lower().endswith(".wav"):
-        #     output_filename = args.output[:-4]
-        # else:
-        #     output_filename = args.output
-        #
-        # segment = 1
-        # output = None
+        h = input_image.shape[0]
+        w = input_image.shape[1]
+
+        output_image = np.zeros((h, w, 3), dtype=np.uint8)
+        orig_image = ImageSource(args.classify_data)
+
+        for y in trange(h):
+            values = range(0, w, 1) if y & 1 else range(w - 1, -1, -1)
+            direction = 1 if y & 1 else -1
+
+            for x in values:
+                new_pixel = som.best_matching_value(input_image, y * w + x)
+                output_image[y, x] = (new_pixel * 255.0).astype(np.uint8)
+
+                if not args.dithering:
+                    continue
+
+                # If dithering, Floyd-Steinberg:
+                error = (orig_image[y, x] - new_pixel) / 16
+                if 0 <= x + direction <= w - 1:
+                    pix = input_image[y, x + direction]
+                    pix += error * 7
+
+                if y + 1 < h:
+                    pix = input_image[y + 1, x]
+                    pix += error * 5
+
+                    if 0 <= x - direction <= w - 1:
+                        pix = input_image[y + 1, x - direction]
+                        pix += error * 3
+
+                    if 0 <= x + direction <= w - 1:
+                        pix = input_image[y + 1, x + direction]
+                        pix += error
+
+        im = Image.fromarray(output_image)
+        im.save(args.output)
         # for i in trange(len(data_source)):
         #     sample = som.best_matching_value(data_source, i) * (
         #         2 ** (8 * data_source.sample_width - 1)
