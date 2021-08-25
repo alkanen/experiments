@@ -1,0 +1,121 @@
+#!/usr/bin/env python3
+
+import argparse
+import csv
+import re
+import sys
+
+
+def parse_arguments():
+    parser = argparse.ArgumentParser(
+        description="Filter CSV files and print the result to stdout."
+    )
+
+    parser.add_argument(
+        "csv",
+        help="File to parse, or stdin if '--' or omitted.",
+        nargs="?",
+        type=argparse.FileType("r"),
+        default=sys.stdin,
+    )
+
+    parser.add_argument(
+        "-p",
+        "--print-header",
+        help="Print headers of input file and exit.",
+        action="store_true",
+        required=False,
+    )
+
+    parser.add_argument(
+        "-k",
+        "--keep",
+        help="Fields to keep in the output.  Can't be used with `--discard`.",
+        action="append",
+        type=str,
+        required=False,
+    )
+
+    parser.add_argument(
+        "-d",
+        "--discard",
+        help="Fields to discard from the output.  Can't be used with `--keep`.",
+        action="append",
+        type=str,
+        required=False,
+    )
+
+    parser.add_argument(
+        "-f",
+        "--filter",
+        metavar="[fieldname]=[pattern]",
+        help="Discard any line where the specified field matches the pattern.",
+        action="append",
+        type=str,
+        required=False,
+    )
+
+    parser.add_argument(
+        "-m",
+        "--match",
+        metavar="[fieldname]=[pattern]",
+        help="Keep lines where the specified field matches the pattern.",
+        action="append",
+        type=str,
+        required=False,
+    )
+
+    return parser.parse_args()
+
+
+def main():
+    args = parse_arguments()
+    if args.keep and args.discard:
+        print(
+            "You can only specify either `--keep` or `--discard`, not both at the same time.",
+            file=sys.stderr,
+        )
+        return
+
+    reader = csv.DictReader(args.csv)
+
+    if args.print_header:
+        for name in reader.fieldnames:
+            print(name)
+
+        return
+
+    if args.keep:
+        fieldnames = [name for name in reader.fieldnames if name in args.keep]
+    elif args.discard:
+        fieldnames = [name for name in reader.fieldnames if name not in args.discard]
+    else:
+        fieldnames = reader.fieldnames
+
+    matches = []
+    filters = []
+
+    for filter in args.filter or []:
+        field, pattern = filter.split("=", 1)
+        filters.append((field, re.compile(pattern)))
+
+    for match in args.match or []:
+        field, pattern = match.split("=", 1)
+        matches.append((field, re.compile(pattern)))
+
+    writer = csv.DictWriter(sys.stdout, fieldnames=fieldnames)
+    writer.writeheader()
+    for i, row in enumerate(reader):
+        for filter in filters:
+            if filter[1].search(row[filter[0]]):
+                break
+        else:
+            for match in matches:
+                if not match[1].search(row[match[0]]):
+                    break
+            else:
+                writer.writerow({x: row[x] for x in fieldnames})
+
+
+if __name__ == "__main__":
+    main()
