@@ -79,20 +79,24 @@ def main():
         )
         return
 
-    reader = csv.DictReader(args.csv)
+    csv_file = open(args.csv.name) if args.csv.name != "<stdin>" else sys.stdin
+    reader = csv.reader(iter(csv_file.readline, ""))
+    fieldnames = next(reader)
 
     if args.print_header:
-        for name in reader.fieldnames:
+        for name in fieldnames:
             print(name)
 
         return
 
+    field_idx = {name: idx for (idx, name) in enumerate(fieldnames)}
     if args.keep:
-        fieldnames = [name for name in reader.fieldnames if name in args.keep]
+        fieldnames = [name for name in fieldnames if name in args.keep]
     elif args.discard:
-        fieldnames = [name for name in reader.fieldnames if name not in args.discard]
+        fieldnames = [name for name in fieldnames if name not in args.discard]
     else:
-        fieldnames = reader.fieldnames
+        # Silly, really
+        fieldnames = [name for name in fieldnames]
 
     matches = []
     filters = []
@@ -109,14 +113,15 @@ def main():
     writer.writeheader()
     for i, row in enumerate(reader):
         for filter in filters:
-            if filter[1].search(row[filter[0]]):
+            if filter[1].search(row[field_idx[filter[0]]]):
                 break
         else:
             for match in matches:
-                if not match[1].search(row[match[0]]):
+                if not match[1].search(row[field_idx[match[0]]]):
                     break
+
             else:
-                writer.writerow({x: row[x] for x in fieldnames})
+                writer.writerow({x: row[field_idx[x]] for x in fieldnames})
 
 
 if __name__ == "__main__":
