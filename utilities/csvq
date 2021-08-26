@@ -13,7 +13,7 @@ def parse_arguments():
 
     parser.add_argument(
         "csv",
-        help="File to parse, or stdin if '--' or omitted.",
+        help="File to parse, or stdin if omitted.",
         nargs="?",
         type=argparse.FileType("r"),
         default=sys.stdin,
@@ -30,6 +30,7 @@ def parse_arguments():
     parser.add_argument(
         "-k",
         "--keep",
+        metavar="fieldname",
         help="Fields to keep in the output.  Can't be used with `--discard`.",
         action="append",
         type=str,
@@ -39,6 +40,7 @@ def parse_arguments():
     parser.add_argument(
         "-d",
         "--discard",
+        metavar="fieldname",
         help="Fields to discard from the output.  Can't be used with `--keep`.",
         action="append",
         type=str,
@@ -48,7 +50,7 @@ def parse_arguments():
     parser.add_argument(
         "-f",
         "--filter",
-        metavar="[fieldname]=[pattern]",
+        metavar="fieldname=pattern",
         help="Discard any line where the specified field matches the pattern.",
         action="append",
         type=str,
@@ -58,7 +60,7 @@ def parse_arguments():
     parser.add_argument(
         "-m",
         "--match",
-        metavar="[fieldname]=[pattern]",
+        metavar="fieldname=pattern",
         help="Keep lines where the specified field matches the pattern.",
         action="append",
         type=str,
