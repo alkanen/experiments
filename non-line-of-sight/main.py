@@ -1,8 +1,10 @@
 from math import ceil, floor, sqrt
 import os
+from pathlib import Path
 
 try:
     from numba import jit, prange
+
 except ImportError:
 
     def jit(
@@ -31,7 +33,7 @@ from tqdm import tqdm
 
 from loadmat import loadmat
 
-
+# Small value used to avoid division-by-zero errors
 # np.finfo(np.float64).eps
 # eps = 2.220446049250313e-16
 # np.finfo(np.float32).eps
@@ -39,6 +41,10 @@ eps = 1.1920929e-07
 
 # Speed of light in m/s
 c = 299792458
+
+
+def ensure_folder(filename):
+    Path(filename).parent.mkdir(parents=True, exist_ok=True)
 
 
 def calibrate(tau, calibration, resolution_t=32e-12):
@@ -127,7 +133,13 @@ def stolt_interpolation(A, resolution_t, physical_y, physical_x):
         for K_y in prange(phi.shape[1]):
             for K_x in prange(phi.shape[2]):
                 phi[K_t, K_y, K_x] = stolt_interpolation_sub(
-                    A, K_t, K_y, K_x, resolution_t, physical_y, physical_x,
+                    A,
+                    K_t,
+                    K_y,
+                    K_x,
+                    resolution_t,
+                    physical_y,
+                    physical_x,
                 )
     return phi
 
@@ -234,7 +246,12 @@ def main():
     phi_bar = perform_fft(tau, (T, h, w))
 
     print("Interpolate data")
-    phi = stolt_interpolation(phi_bar, resolution_t=32e-12, physical_y=2, physical_x=2,)
+    phi = stolt_interpolation(
+        phi_bar,
+        resolution_t=32e-12,
+        physical_y=2,
+        physical_x=2,
+    )
     phi_bar = None
 
     tau_new = unperform_fft(phi, (T, h, w))
@@ -245,20 +262,28 @@ def main():
 
     if to_video:
         print("Save video frames")
-        scale = 255. / np.max(tau_new)
+        scale = 255.0 / np.max(tau_new)
         for i, plane in tqdm(enumerate(tau_new)):
             plane = np.rot90(plane, 3)
             im = Image.fromarray((np.fliplr(plane) * scale).astype(np.uint8))
-            im.convert("L").save("images/frame_%05d.png" % i)
+            filename = "images/frame_%05d.png" % i
+            ensure_folder(filename)
+            im.convert("L").save(filename)
 
     else:
         print("Save image")
         plane = np.max(tau_new, axis=0) / np.max(tau_new)
         plane = np.rot90(plane, 3)
         im = Image.fromarray((np.fliplr(plane) * 255).astype(np.uint8))
-        im.convert("L").save(
-            "images/%s_nlos_%d_%d.png" % (dataset, max_dimension, time)
-        )
+        # Create output folder if necessary
+        filename = "images/%s_nlos_%d_%d.png" % (dataset, max_dimension, time)
+        ensure_folder(filename)
+        im.convert("L").save(filename)
+
+        print("Save image")
+        plane = np.max(tau_new, axis=0) / np.max(tau_new)
+        plane = np.rot90(plane, 3)
+        im = Image.fromarray((np.fliplr(plane) * 255).astype(np.uint8))
 
 
 if __name__ == "__main__":
