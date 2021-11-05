@@ -1,0 +1,10 @@
+{
+    "look_from": [13, 2, 3],
+    "look_at": [0, 0, 0],
+    "up": [0, 1, 0],
+    "vertical_fov": 20.0,
+    "dist_to_focus": 10.0,
+    "aperture": 0.1,
+    "time_start": 0.0,
+    "time_end": 1.0
+}
